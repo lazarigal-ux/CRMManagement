@@ -1,0 +1,14 @@
+@* -----------------------------------------------------------
+   _FooterScripts.cshtml
+   Load order:
+   - jQuery
+   - Site scripts last
+   Note: jQuery Validate scripts are loaded on-demand via
+         _ValidationScriptsPartial on pages that need them.
+   ----------------------------------------------------------- *@
+
+<script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
+
+<script src="~/js/site.js" asp-append-version="true" defer></script>
+<script src="~/js/ui/dom-apply.js" asp-append-version="true" defer></script>
+<script src="~/js/ui/uiedit-bridge.js" asp-append-version="true" defer></script>

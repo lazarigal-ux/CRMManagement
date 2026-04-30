@@ -1,0 +1,65 @@
+@page "{id:guid}"
+@model CRMManagement.Web.Pages.Accounts.DetailsModel
+@{ ViewData["Title"] = "Account Details"; }
+
+@if (Model.Item is null)
+{
+    <div class="p-4 text-slate-300">Not found.</div>
+}
+else
+{
+    var a = Model.Item;
+    <section class="p-4 space-y-4">
+        <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-semibold text-slate-100">@a.Name</h1>
+            <a asp-page="/Accounts/Upsert" asp-route-id="@a.Id" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm">Edit</a>
+        </div>
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-200">
+            <div><span class="text-slate-400">Legal:</span> @a.LegalName</div>
+            <div><span class="text-slate-400">Industry:</span> @a.Industry</div>
+            <div><span class="text-slate-400">Website:</span> @a.Website</div>
+            <div><span class="text-slate-400">Phone:</span> @a.Phone</div>
+            <div><span class="text-slate-400">Email:</span> @a.Email</div>
+            <div><span class="text-slate-400">Revenue:</span> @a.AnnualRevenue</div>
+            <div><span class="text-slate-400">Employees:</span> @a.EmployeeCount</div>
+            <div><span class="text-slate-400">Active:</span> @a.IsActive</div>
+            <div class="md:col-span-2"><span class="text-slate-400">Billing:</span> @a.BillingAddress</div>
+            <div class="md:col-span-2"><span class="text-slate-400">Shipping:</span> @a.ShippingAddress</div>
+            <div class="md:col-span-2"><span class="text-slate-400">Description:</span> @a.Description</div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6">
+            <h2 class="text-lg font-semibold text-slate-100 mb-3">Contacts</h2>
+            <table class="w-full text-sm text-slate-200">
+                <thead><tr class="text-left text-xs uppercase text-slate-400"><th class="py-2">Name</th><th class="py-2">Email</th><th class="py-2">Phone</th></tr></thead>
+                <tbody>
+                @foreach (var c in Model.Contacts)
+                {
+                    <tr class="border-t border-slate-700/40">
+                        <td class="py-2"><a class="text-blue-400 hover:underline" asp-page="/Contacts/Details" asp-route-id="@c.Id">@c.FirstName @c.LastName</a></td>
+                        <td class="py-2">@c.Email</td>
+                        <td class="py-2">@c.Phone</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6">
+            <h2 class="text-lg font-semibold text-slate-100 mb-3">Opportunities</h2>
+            <table class="w-full text-sm text-slate-200">
+                <thead><tr class="text-left text-xs uppercase text-slate-400"><th class="py-2">Name</th><th class="py-2">Amount</th><th class="py-2">Status</th></tr></thead>
+                <tbody>
+                @foreach (var o in Model.Opportunities)
+                {
+                    <tr class="border-t border-slate-700/40">
+                        <td class="py-2"><a class="text-blue-400 hover:underline" asp-page="/Opportunities/Details" asp-route-id="@o.Id">@o.Name</a></td>
+                        <td class="py-2">@o.Amount.ToString("N2") @o.Currency</td>
+                        <td class="py-2">@o.Status</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}

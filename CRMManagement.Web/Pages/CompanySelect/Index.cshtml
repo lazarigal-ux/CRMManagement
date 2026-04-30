@@ -1,0 +1,218 @@
+@page
+@model CRMManagement.Web.Pages.CompanySelect.IndexModel
+@{
+    ViewData["Title"] = "Select Company";
+    ViewData["ForceHideSidebar"] = true;
+}
+
+<style>
+    .cs-card {
+        background: rgba(51,65,85,.8);
+        border: 1px solid rgba(148,163,184,.35);
+        border-radius: 1rem;
+    }
+    .cs-table { border-collapse: collapse; width: 100%; }
+    .cs-table th, .cs-table td {
+        border-bottom: 1px solid rgba(148,163,184,.2);
+        border-right: 1px solid rgba(148,163,184,.15);
+        padding: 0.6rem 0.85rem;
+        text-align: left;
+        font-size: 13px;
+    }
+    .cs-table th:last-child, .cs-table td:last-child { border-right: none; }
+    .cs-table thead th {
+        background: rgba(15,23,42,.4);
+        color: rgb(148,163,184);
+        font-weight: 600;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        border-bottom: 1px solid rgba(148,163,184,.35);
+    }
+    .cs-table tbody tr { cursor: pointer; transition: background .15s; }
+    .cs-table tbody tr:hover { background: rgba(59,130,246,.12); }
+    .cs-table tbody tr:last-child td { border-bottom: none; }
+    .cs-table tbody tr.is-active { background: rgba(52,211,153,.08); }
+    .cs-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.15rem 0.55rem;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .cs-search {
+        background: rgba(15,23,42,.5);
+        border: 1px solid rgba(148,163,184,.3);
+        border-radius: 0.5rem;
+        padding: 0.45rem 0.75rem;
+        color: #e2e8f0;
+        font-size: 13px;
+        outline: none;
+        width: 100%;
+        max-width: 320px;
+    }
+    .cs-search:focus { border-color: rgb(59,130,246); }
+    .cs-search::placeholder { color: rgb(100,116,139); }
+
+    .cs-mobile-card {
+        background: rgba(51,65,85,.6);
+        border: 1px solid rgba(148,163,184,.25);
+        border-radius: 0.75rem;
+        padding: 0.85rem;
+        transition: background .15s, border-color .15s;
+    }
+    .cs-mobile-card:active { background: rgba(59,130,246,.12); }
+    .cs-mobile-card.is-active {
+        background: rgba(52,211,153,.08);
+        border-color: rgba(52,211,153,.4);
+    }
+
+    .cs-desktop-only { display: none; }
+    .cs-mobile-only { display: block; }
+    @@media (min-width: 768px) {
+        .cs-desktop-only { display: block; }
+        .cs-mobile-only { display: none; }
+    }
+</style>
+
+<div class="px-3 md:px-4 py-3 md:py-4" style="max-width: 1200px;">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3 md:mb-4">
+        <div>
+            <h1 class="text-base md:text-lg font-semibold text-slate-100">
+                <i class="fa-solid fa-building mr-1.5 text-blue-400"></i> Select Company
+            </h1>
+            <p class="text-xs text-slate-400 mt-0.5">Choose a company to work with</p>
+        </div>
+        <input type="text" id="csSearch" class="cs-search" placeholder="Search companies..." oninput="filterCompanies(this.value)" />
+    </div>
+
+    @if (Model.Companies.Count == 0)
+    {
+        <div class="cs-card p-6 text-center">
+            <p class="text-slate-400">No companies found.</p>
+        </div>
+    }
+    else
+    {
+        @* ── Desktop: Table ── *@
+        <div class="cs-desktop-only cs-card overflow-hidden">
+            <table class="cs-table" id="csTable">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">#</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th style="width: 100px;">Projects</th>
+                        <th style="width: 90px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model.Companies)
+                    {
+                        var isActive = Model.ActiveCompanyId == c.Id && Model.ActiveCompanyId > 0;
+                        <tr data-search="@c.Name?.ToLower() @c.Email?.ToLower() @c.Phone?.ToLower()"
+                            class="cs-row @(isActive ? "is-active" : "")"
+                            onclick="this.querySelector('form').submit()">
+                            <td class="text-slate-400 text-xs">@c.Id</td>
+                            <td class="text-slate-100 font-medium">
+                                @c.Name
+                                @if (isActive)
+                                {
+                                    <span class="cs-badge ml-2" style="background: rgba(52,211,153,.15); color: rgb(52,211,153);">
+                                        <i class="fa-solid fa-check" style="font-size:9px;"></i> Active
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-slate-300">@(c.Email ?? "—")</td>
+                            <td class="text-slate-300">@(c.Phone ?? "—")</td>
+                            <td>
+                                <span class="cs-badge" style="background: rgba(59,130,246,.15); color: rgb(96,165,250);">
+                                    <i class="fa-solid fa-folder-open" style="font-size:10px;"></i> @c.ProjectCount
+                                </span>
+                            </td>
+                            <td>
+                                <form method="post" asp-page-handler="Select" style="display:inline;">
+                                    <input type="hidden" name="companyId" value="@c.Id" />
+                                    <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition
+                                        @(isActive
+                                            ? "text-emerald-300 border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20"
+                                            : "text-blue-300 border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20")">
+                                        <i class="fa-solid fa-arrow-right-to-bracket" style="font-size:10px;"></i>
+                                        @(isActive ? "Continue" : "Select")
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @* ── Mobile: Card list ── *@
+        <div class="cs-mobile-only space-y-2" id="csCards">
+            @foreach (var c in Model.Companies)
+            {
+                var isActive = Model.ActiveCompanyId == c.Id && Model.ActiveCompanyId > 0;
+                <form method="post" asp-page-handler="Select" data-search="@c.Name?.ToLower() @c.Email?.ToLower() @c.Phone?.ToLower()" class="cs-mobile-row">
+                    <input type="hidden" name="companyId" value="@c.Id" />
+                    <button type="submit" class="cs-mobile-card w-full text-left @(isActive ? "is-active" : "")">
+                        <div class="flex items-start justify-between gap-2 mb-1.5">
+                            <div class="flex items-center gap-2 min-w-0 flex-1">
+                                <i class="fa-solid fa-building text-blue-400 text-sm shrink-0"></i>
+                                <span class="text-slate-100 font-semibold text-sm truncate">@c.Name</span>
+                            </div>
+                            @if (isActive)
+                            {
+                                <span class="cs-badge shrink-0" style="background: rgba(52,211,153,.15); color: rgb(52,211,153);">
+                                    <i class="fa-solid fa-check" style="font-size:9px;"></i> Active
+                                </span>
+                            }
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(c.Email) || !string.IsNullOrWhiteSpace(c.Phone))
+                        {
+                            <div class="flex flex-col gap-0.5 mb-2 text-xs text-slate-400">
+                                @if (!string.IsNullOrWhiteSpace(c.Email))
+                                {
+                                    <span class="flex items-center gap-1.5 truncate"><i class="fa-solid fa-envelope text-[9px] shrink-0"></i>@c.Email</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(c.Phone))
+                                {
+                                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-phone text-[9px] shrink-0"></i>@c.Phone</span>
+                                }
+                            </div>
+                        }
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="cs-badge" style="background: rgba(59,130,246,.15); color: rgb(96,165,250);">
+                                <i class="fa-solid fa-folder-open" style="font-size:10px;"></i>
+                                @c.ProjectCount project@(c.ProjectCount == 1 ? "" : "s")
+                            </span>
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium
+                                @(isActive
+                                    ? "text-emerald-300 border border-emerald-500/30 bg-emerald-500/10"
+                                    : "text-blue-300 border border-blue-500/30 bg-blue-500/10")">
+                                <i class="fa-solid fa-arrow-right-to-bracket" style="font-size:10px;"></i>
+                                @(isActive ? "Continue" : "Select")
+                            </span>
+                        </div>
+                    </button>
+                </form>
+            }
+        </div>
+
+        <p class="text-xs text-slate-500 mt-2">@Model.Companies.Count company(ies)</p>
+    }
+</div>
+
+<script>
+    function filterCompanies(query) {
+        var q = (query || '').toLowerCase().trim();
+        var rows = document.querySelectorAll('.cs-row, .cs-mobile-row');
+        for (var i = 0; i < rows.length; i++) {
+            var text = rows[i].getAttribute('data-search') || '';
+            rows[i].style.display = !q || text.indexOf(q) !== -1 ? '' : 'none';
+        }
+    }
+</script>

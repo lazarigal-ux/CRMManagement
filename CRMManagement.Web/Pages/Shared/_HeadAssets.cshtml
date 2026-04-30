@@ -1,0 +1,93 @@
+@* -----------------------------------------------------------
+   _HeadAssets.cshtml
+   Shared CSS & minimal JS in <head>
+   - Applies persisted theme before first paint
+   - Loads Tailwind output.css and site.css
+   - Loads local FontAwesome + animate.css
+   ----------------------------------------------------------- *@
+
+@* Early: apply saved theme BEFORE CSS to prevent FOUC *@
+<script>
+    (function () {
+      try {
+        var url = new URL(window.location.href);
+        var isEmbedded = url.searchParams.get('embed') === '1' || localStorage.getItem('work.embedMode') === '1';
+
+        function normalizeTheme(v) {
+          if (!v) return null;
+          v = String(v).toLowerCase();
+          if (v === 'dark' || v === 'grey') return 'gray';
+          if (v === 'gray' || v === 'light' || v === 'black') return v;
+          return null;
+        }
+
+        var pref = normalizeTheme(localStorage.getItem('theme'));
+        var theme = pref || 'gray';
+        var isDark = (theme === 'gray' || theme === 'black');
+
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.classList.toggle('dark', isDark);
+        document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+
+        if (localStorage.getItem('theme') === 'dark') {
+          localStorage.setItem('theme', 'gray');
+        }
+
+        // Apply saved language/direction before first paint to prevent flash
+        var savedLang = localStorage.getItem('work.lang');
+        if (savedLang) {
+          document.documentElement.lang = savedLang;
+          var savedDir = (savedLang === 'he' || savedLang === 'ar') ? 'rtl' : 'ltr';
+          document.documentElement.dir = savedDir;
+        }
+
+        if (isEmbedded) {
+          document.documentElement.classList.add('work-embedded');
+          document.documentElement.dataset.embedMode = 'main-site';
+          localStorage.setItem('work.embedMode', '1');
+
+          if (window.parent && window.parent !== window) {
+            var shouldRewrite = false;
+
+            if (!url.searchParams.has('embed')) {
+              url.searchParams.set('embed', '1');
+              shouldRewrite = true;
+            }
+
+            if (!url.searchParams.has('iframe')) {
+              url.searchParams.set('iframe', '1');
+              shouldRewrite = true;
+            }
+
+            if (shouldRewrite) {
+              window.location.replace(url.toString());
+              return;
+            }
+          }
+        }
+      } catch (_) {}
+    })();
+</script>
+
+@* Local icon/fonts libraries *@
+@* Google Fonts are loaded only in standalone mode; in embed mode the CRM
+   inherits the parent site's system-font stack so it looks identical. *@
+@{
+    var heIsEmbed = ViewContext?.HttpContext?.Request?.Cookies["crm_embed"] == "1"
+        || (ViewContext?.HttpContext?.Request?.Query.ContainsKey("embed") ?? false)
+        || (ViewContext?.HttpContext?.Request?.Query.ContainsKey("iframe") ?? false);
+}
+@if (!heIsEmbed)
+{
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" />
+}
+<link rel="stylesheet" href="/lib/fontawesome/6.x/css/all.min.css" asp-append-version="true" />
+<link rel="stylesheet" href="/lib/animate.css/4.1.1/animate.min.css" asp-append-version="true" />
+
+@* Tailwind local build output (utilities first) *@
+<link rel="stylesheet" href="~/css/output.css" asp-append-version="true" />
+
+@* Overrides should come after Tailwind so they win *@
+<link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />

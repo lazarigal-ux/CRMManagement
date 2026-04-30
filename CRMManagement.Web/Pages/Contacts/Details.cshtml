@@ -1,0 +1,30 @@
+@page "{id:guid}"
+@model CRMManagement.Web.Pages.Contacts.DetailsModel
+@{ ViewData["Title"] = "Contact Details"; }
+
+@if (Model.Item is null)
+{
+    <div class="p-4 text-slate-300">Not found.</div>
+}
+else
+{
+    var c = Model.Item;
+    <section class="p-4 space-y-4">
+        <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-semibold text-slate-100">@c.FirstName @c.LastName</h1>
+            <a asp-page="/Contacts/Upsert" asp-route-id="@c.Id" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm">Edit</a>
+        </div>
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-200">
+            <div><span class="text-slate-400">Title:</span> @c.Title</div>
+            <div><span class="text-slate-400">Department:</span> @c.Department</div>
+            <div><span class="text-slate-400">Email:</span> @c.Email</div>
+            <div><span class="text-slate-400">Phone:</span> @c.Phone</div>
+            <div><span class="text-slate-400">Mobile:</span> @c.Mobile</div>
+            <div><span class="text-slate-400">Account:</span> @c.AccountId</div>
+            <div class="md:col-span-2"><span class="text-slate-400">Address:</span> @c.Address</div>
+            <div class="md:col-span-2"><span class="text-slate-400">Description:</span> @c.Description</div>
+            <div><span class="text-slate-400">Primary:</span> @c.IsPrimary</div>
+            <div><span class="text-slate-400">Do Not Contact:</span> @c.DoNotContact</div>
+        </div>
+    </section>
+}

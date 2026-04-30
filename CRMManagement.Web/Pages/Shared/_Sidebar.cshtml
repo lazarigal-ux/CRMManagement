@@ -1,0 +1,134 @@
+@model dynamic
+@{
+    bool showSidebar = (bool)(Model?.showSidebar ?? false);
+
+    var currentPath = (ViewContext?.HttpContext?.Request?.Path.ToString() ?? "/").ToLowerInvariant();
+    bool StartsWith(string prefix) => currentPath.StartsWith(prefix.ToLowerInvariant(), StringComparison.Ordinal);
+
+    string ItemCls(string prefix) =>
+        "flex items-center gap-2 w-full py-1.5 px-3 rounded-xl transition text-slate-200 hover:text-white hover:bg-slate-600 whitespace-nowrap overflow-hidden text-ellipsis "
+        + (StartsWith(prefix) ? "bg-slate-600 text-white ring-1 ring-slate-500/50" : "");
+
+    string ItemClsExact(params string[] paths) =>
+        "flex items-center gap-2 w-full py-1.5 px-3 rounded-xl transition text-slate-200 hover:text-white hover:bg-slate-600 whitespace-nowrap overflow-hidden text-ellipsis "
+        + (paths.Any(path => string.Equals(currentPath, path.ToLowerInvariant(), StringComparison.Ordinal)) ? "bg-slate-600 text-white ring-1 ring-slate-500/50" : "");
+}
+
+@if (showSidebar)
+{
+    <style>
+        .only-md-flex { display: none; }
+        @@media (min-width: 768px) { .only-md-flex { display: flex !important; } }
+        summary::-webkit-details-marker { display: none; }
+        summary { list-style: none; }
+        details > summary .sb-chevron { transition: transform .15s; }
+        details[open] > summary .sb-chevron { transform: rotate(90deg); }
+    </style>
+
+    <aside data-sidebar="main"
+           class="app-sidebar only-md-flex md:flex-col md:w-56 md:shrink-0
+                  bg-slate-700 text-slate-100 h-[calc(100vh-4rem)]
+                  sticky top-16 border-e border-slate-600/50 select-none z-50
+                  overflow-y-auto overflow-x-visible pb-4">
+        <nav class="app-sidebar-nav relative px-2 py-3 space-y-0.5">
+
+            <a asp-page="/Dashboard/Index" title="Dashboard" class="@ItemCls("/dashboard")">
+                <i class="fa-solid fa-gauge-high w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Dashboard</span>
+            </a>
+
+            <a asp-page="/Leads/Index" title="Leads" class="@ItemCls("/leads")">
+                <i class="fa-solid fa-filter w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Leads</span>
+            </a>
+
+            <a asp-page="/Accounts/Index" title="Accounts" class="@ItemCls("/accounts")">
+                <i class="fa-solid fa-building w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Accounts</span>
+            </a>
+
+            <a asp-page="/Contacts/Index" title="Contacts" class="@ItemCls("/contacts")">
+                <i class="fa-solid fa-address-book w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Contacts</span>
+            </a>
+
+            <a asp-page="/Opportunities/Index" title="Opportunities" class="@ItemCls("/opportunities")">
+                <i class="fa-solid fa-coins w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Opportunities</span>
+            </a>
+
+            <a asp-page="/Activities/Index" title="Activities" class="@ItemCls("/activities")">
+                <i class="fa-solid fa-calendar-check w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Activities</span>
+            </a>
+
+            <a asp-page="/Quotes/Index" title="Quotes" class="@ItemCls("/quotes")">
+                <i class="fa-solid fa-file-invoice-dollar w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Quotes</span>
+            </a>
+
+            <a asp-page="/Products/Index" title="Products" class="@ItemCls("/products")">
+                <i class="fa-solid fa-box w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Products</span>
+            </a>
+
+            <a asp-page="/Campaigns/Index" title="Campaigns" class="@ItemCls("/campaigns")">
+                <i class="fa-solid fa-bullhorn w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Campaigns</span>
+            </a>
+
+            <a asp-page="/Tickets/Index" title="Tickets" class="@ItemCls("/tickets")">
+                <i class="fa-solid fa-headset w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Tickets</span>
+            </a>
+
+            <a asp-page="/Reports/Index" title="Reports" class="@ItemCls("/reports")">
+                <i class="fa-solid fa-chart-line w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Reports</span>
+            </a>
+
+            <a asp-page="/PdfToSvg/Index" title="PDF to SVG" class="@ItemClsExact("/pdftosvg", "/pdftosvg/index")">
+                <i class="fa-solid fa-vector-square w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">PDF to SVG</span>
+            </a>
+
+            <a asp-page="/AiEngine/PdfToSvgSplit" title="PDF to SVG Split" class="@ItemCls("/pdftosvg/split")">
+                <i class="fa-solid fa-scissors w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">PDF to SVG Split</span>
+            </a>
+
+            <a href="/AiEngine/PdfToSvgSplit" title="PDF to SVG Split (ChatGateway)" class="flex items-center gap-2 w-full py-1.5 px-3 rounded-xl transition text-slate-200 hover:text-white hover:bg-slate-600 whitespace-nowrap overflow-hidden text-ellipsis">
+                <i class="fa-solid fa-up-right-from-square w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">PDF to SVG Split Gateway</span>
+            </a>
+
+            <a href="/AiEngine/PdfToSvgLayers" title="PDF to SVG Layers (ChatGateway)" class="flex items-center gap-2 w-full py-1.5 px-3 rounded-xl transition text-slate-200 hover:text-white hover:bg-slate-600 whitespace-nowrap overflow-hidden text-ellipsis">
+                <i class="fa-solid fa-layer-group w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">PDF to SVG Layers Gateway</span>
+            </a>
+
+            <div class="!my-2 mx-3 border-t border-slate-600/40"></div>
+
+            <a asp-page="/Admin/Pipelines/Index" title="Pipelines" class="@ItemCls("/admin/pipelines")">
+                <i class="fa-solid fa-diagram-project w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Pipelines</span>
+            </a>
+
+            <a asp-page="/Admin/Tags/Index" title="Tags" class="@ItemCls("/admin/tags")">
+                <i class="fa-solid fa-tags w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Tags</span>
+            </a>
+
+            <a asp-page="/Admin/Users/Index" title="Users" class="@ItemCls("/admin/users")">
+                <i class="fa-solid fa-users-gear w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Users</span>
+            </a>
+
+            <a href="/UiCustomization/Editor?path=@(Context.Request.Path)" title="UI Editor" class="@ItemCls("/uicustomization")">
+                <i class="fa-solid fa-pen-to-square w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">UI Editor</span>
+            </a>
+
+        </nav>
+    </aside>
+}

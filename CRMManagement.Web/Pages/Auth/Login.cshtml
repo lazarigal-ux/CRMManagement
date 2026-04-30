@@ -1,0 +1,35 @@
+@page
+@model CRMManagement.Web.Pages.Auth.LoginModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Authenticating…</title>
+    <style>
+        body { margin:0; display:flex; align-items:center; justify-content:center; height:100vh; background:#0f172a; color:#94a3b8; font-family:system-ui,sans-serif; }
+        .msg { text-align:center; }
+        .spinner { width:32px; height:32px; margin:0 auto 1rem; border:3px solid #334155; border-top-color:#3b82f6; border-radius:50%; animation:spin .6s linear infinite; }
+        @@keyframes spin { to { transform:rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="msg">
+        <div class="spinner"></div>
+        <p>Authenticating…</p>
+    </div>
+    <script>
+        (function () {
+            // Ask the parent LDataBrain app to reload this iframe with a fresh embed token.
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage(
+                    { source: 'CRMManagement', type: 'REAUTH_NEEDED' },
+                    '*'
+                );
+            }
+        })();
+    </script>
+</body>
+</html>

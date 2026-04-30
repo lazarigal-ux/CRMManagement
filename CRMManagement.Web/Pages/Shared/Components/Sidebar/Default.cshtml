@@ -1,0 +1,187 @@
+@model CRMManagement.Web.ViewComponents.SidebarViewModel
+@using CRMManagement.Application.Abstractions
+@inject ICompanyContext CompanyCtx
+@{
+    var selectedCompanyId = CompanyCtx.SelectedCompanyId;
+    string? selectedCompanyName = null;
+    if (selectedCompanyId.HasValue)
+    {
+        try
+        {
+            var connStr = ViewContext.HttpContext.RequestServices.GetRequiredService<IConfiguration>().GetConnectionString("Default");
+            if (string.IsNullOrWhiteSpace(connStr))
+            {
+                var host = Environment.GetEnvironmentVariable("DB_HOST") ?? Environment.GetEnvironmentVariable("POSTGRES_IP") ?? "localhost";
+                var port = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
+                var db = Environment.GetEnvironmentVariable("DB_NAME") ?? Environment.GetEnvironmentVariable("APP_DB_NAME") ?? "ldatabrain";
+                var user = Environment.GetEnvironmentVariable("DB_USER") ?? Environment.GetEnvironmentVariable("APP_DB_USER") ?? "ldataapp";
+                var pass = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? Environment.GetEnvironmentVariable("APP_DB_PASSWORD") ?? "";
+                connStr = $"Host={host};Port={port};Database={db};Username={user};Password={pass}";
+            }
+            using var conn = new Npgsql.NpgsqlConnection(connStr);
+            await conn.OpenAsync();
+            using var cmd = new Npgsql.NpgsqlCommand("SELECT name FROM public.licensing_companies WHERE id = @id AND is_archived = FALSE LIMIT 1", conn);
+            cmd.Parameters.AddWithValue("id", selectedCompanyId.Value);
+            selectedCompanyName = (await cmd.ExecuteScalarAsync())?.ToString();
+        }
+        catch { }
+    }
+    var currentPath = (ViewContext?.HttpContext?.Request?.Path.ToString() ?? "/").ToLowerInvariant();
+    bool StartsWith(string prefix) => currentPath.StartsWith(prefix.ToLowerInvariant(), StringComparison.Ordinal);
+
+    string ItemCls(string prefix) =>
+        "flex items-center gap-2 w-full py-1.5 px-3 rounded-xl transition text-slate-200 hover:text-white hover:bg-slate-600 whitespace-nowrap overflow-hidden text-ellipsis "
+        + (StartsWith(prefix) ? "bg-slate-600 text-white ring-1 ring-slate-500/50" : "");
+
+    string ItemClsExact(params string[] paths) =>
+        "flex items-center gap-2 w-full py-1.5 px-3 rounded-xl transition text-slate-200 hover:text-white hover:bg-slate-600 whitespace-nowrap overflow-hidden text-ellipsis "
+        + (paths.Any(path => string.Equals(currentPath, path.ToLowerInvariant(), StringComparison.Ordinal)) ? "bg-slate-600 text-white ring-1 ring-slate-500/50" : "");
+
+    bool isAdminOpen = StartsWith("/admin");
+}
+
+@if (Model.ShowSidebar)
+{
+    <style>
+        .only-md-flex { display: none; }
+        @@media (min-width: 768px) { .only-md-flex { display: flex !important; } }
+        summary::-webkit-details-marker { display: none; }
+        summary { list-style: none; }
+        .submenu { border-left: 2px solid color-mix(in srgb, currentColor 22%, transparent); margin-left: 1rem; padding: .25rem 0 .25rem .5rem; border-radius: .5rem; }
+        html[dir="rtl"] .submenu { border-left: none; border-right: 2px solid color-mix(in srgb, currentColor 22%, transparent); margin-left: 0; margin-right: 1rem; padding-left: 0; padding-right: .5rem; }
+    </style>
+
+    <aside data-sidebar="main"
+           class="only-md-flex md:w-56 md:shrink-0
+                  bg-slate-700 text-slate-100 h-[calc(100vh-4rem)]
+                  sticky top-16 border-e border-slate-600/50 select-none z-50
+                  overflow-x-visible pb-0"
+           style="display:flex; flex-direction:column;">
+        <nav class="relative px-2 py-3 space-y-0.5" style="flex:1 1 0%; min-height:0; overflow-y:auto; padding-bottom:calc(4.5rem + env(safe-area-inset-bottom));">
+
+            <a asp-page="/Dashboard/Index" title="Dashboard" class="@ItemCls("/dashboard")">
+                <i class="fa-solid fa-gauge-high w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Dashboard</span>
+            </a>
+
+            <a asp-page="/Leads/Index" title="Leads" class="@ItemCls("/leads")">
+                <i class="fa-solid fa-filter w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Leads</span>
+            </a>
+
+            <a asp-page="/Accounts/Index" title="Accounts" class="@ItemCls("/accounts")">
+                <i class="fa-solid fa-building w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Accounts</span>
+            </a>
+
+            <a asp-page="/Contacts/Index" title="Contacts" class="@ItemCls("/contacts")">
+                <i class="fa-solid fa-address-book w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Contacts</span>
+            </a>
+
+            <a asp-page="/Opportunities/Index" title="Opportunities" class="@ItemCls("/opportunities")">
+                <i class="fa-solid fa-coins w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Opportunities</span>
+            </a>
+
+            <a asp-page="/Activities/Index" title="Activities" class="@ItemCls("/activities")">
+                <i class="fa-solid fa-calendar-check w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Activities</span>
+            </a>
+
+            <a asp-page="/Quotes/Index" title="Quotes" class="@ItemCls("/quotes")">
+                <i class="fa-solid fa-file-invoice-dollar w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Quotes</span>
+            </a>
+
+            <a asp-page="/Products/Index" title="Products" class="@ItemCls("/products")">
+                <i class="fa-solid fa-box w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Products</span>
+            </a>
+
+            <a asp-page="/Campaigns/Index" title="Campaigns" class="@ItemCls("/campaigns")">
+                <i class="fa-solid fa-bullhorn w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Campaigns</span>
+            </a>
+
+            <a asp-page="/Tickets/Index" title="Tickets" class="@ItemCls("/tickets")">
+                <i class="fa-solid fa-headset w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Tickets</span>
+            </a>
+
+            <a asp-page="/Reports/Index" title="Reports" class="@ItemCls("/reports")">
+                <i class="fa-solid fa-chart-line w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Reports</span>
+            </a>
+
+            <a asp-page="/PdfToSvg/Index" title="PDF to SVG" class="@ItemClsExact("/pdftosvg", "/pdftosvg/index")">
+                <i class="fa-solid fa-vector-square w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">PDF to SVG</span>
+            </a>
+
+            <a asp-page="/AiEngine/PdfToSvgSplit" title="PDF to SVG Split" class="@ItemCls("/pdftosvg/split")">
+                <i class="fa-solid fa-scissors w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">PDF to SVG Split</span>
+            </a>
+
+            <a href="/AiEngine/PdfToSvgSplit" title="PDF to SVG Split (ChatGateway)" class="flex items-center gap-2 w-full py-1.5 px-3 rounded-xl transition text-slate-200 hover:text-white hover:bg-slate-600 whitespace-nowrap overflow-hidden text-ellipsis">
+                <i class="fa-solid fa-up-right-from-square w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">PDF to SVG Split Gateway</span>
+            </a>
+
+            <a href="/AiEngine/PdfToSvgLayers" title="PDF to SVG Layers (ChatGateway)" class="flex items-center gap-2 w-full py-1.5 px-3 rounded-xl transition text-slate-200 hover:text-white hover:bg-slate-600 whitespace-nowrap overflow-hidden text-ellipsis">
+                <i class="fa-solid fa-layer-group w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">PDF to SVG Layers Gateway</span>
+            </a>
+
+            <div class="!my-2 mx-3 border-t border-slate-600/40"></div>
+
+            <details class="sidebar-group group" aria-label="Settings" @(isAdminOpen ? "open" : "")>
+                <summary class="flex items-center gap-2 w-full py-1.5 px-3 rounded-xl transition cursor-pointer select-none text-slate-200 hover:text-white hover:bg-slate-600">
+                    <div class="inline-flex items-center gap-2 min-w-0 flex-1">
+                        <i class="fa-solid fa-gear w-3.5 text-xs"></i>
+                        <span class="sb-text text-xs truncate">Settings</span>
+                    </div>
+                    <span class="shrink-0"><i class="fa-solid fa-caret-down text-xs opacity-50"></i></span>
+                </summary>
+                <div class="submenu mt-0.5 space-y-0.5">
+                    <a asp-page="/Admin/Pipelines/Index" class="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg hover:bg-slate-600 @(StartsWith("/admin/pipelines") ? "bg-slate-600 text-white ring-1 ring-slate-500/50" : "")">
+                        <i class="fa-solid fa-diagram-project w-3 text-[10px]"></i>
+                        <span class="sb-text text-[11px] truncate">Pipelines</span>
+                    </a>
+                    <a asp-page="/Admin/Tags/Index" class="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg hover:bg-slate-600 @(StartsWith("/admin/tags") ? "bg-slate-600 text-white ring-1 ring-slate-500/50" : "")">
+                        <i class="fa-solid fa-tags w-3 text-[10px]"></i>
+                        <span class="sb-text text-[11px] truncate">Tags</span>
+                    </a>
+                    <a asp-page="/Admin/Users/Index" class="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg hover:bg-slate-600 @(StartsWith("/admin/users") ? "bg-slate-600 text-white ring-1 ring-slate-500/50" : "")">
+                        <i class="fa-solid fa-users-gear w-3 text-[10px]"></i>
+                        <span class="sb-text text-[11px] truncate">Users</span>
+                    </a>
+                </div>
+            </details>
+
+        </nav>
+
+        @* ──── Company footer (pinned above the phone's home indicator) ──── *@
+        <div style="position:absolute; left:0; right:0; bottom:0; padding: 0.5rem 0.5rem calc(0.75rem + env(safe-area-inset-bottom)); border-top: 1px solid rgba(148,163,184,.2); background: rgb(51 65 85 / 0.95); backdrop-filter: blur(4px); z-index: 5;">
+            <a asp-page="/CompanySelect/Index"
+               class="flex items-center gap-2 w-full py-2 px-3 rounded-xl transition
+                      hover:bg-slate-600 whitespace-nowrap overflow-hidden text-ellipsis"
+               title="@(string.IsNullOrWhiteSpace(selectedCompanyName) ? "Select company" : $"Working on: {selectedCompanyName}")">
+                <i class="fa-solid fa-building w-3.5 text-xs text-blue-400 shrink-0"></i>
+                @if (!string.IsNullOrWhiteSpace(selectedCompanyName))
+                {
+                    <span class="sb-text text-[11px] truncate">
+                        <span class="text-slate-400 text-[9px] uppercase tracking-wide block leading-tight">Company</span>
+                        <span class="text-blue-300 font-semibold">@selectedCompanyName</span>
+                    </span>
+                }
+                else
+                {
+                    <span class="sb-text text-[11px] text-amber-300 truncate">No company selected</span>
+                }
+                <i class="fa-solid fa-repeat w-2.5 text-[9px] text-slate-500 ml-auto shrink-0"></i>
+            </a>
+        </div>
+    </aside>
+}

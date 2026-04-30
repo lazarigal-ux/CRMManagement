@@ -1,0 +1,46 @@
+@page
+@model CRMManagement.Web.Pages.Opportunities.KanbanModel
+@{ ViewData["Title"] = "Opportunities - Kanban"; }
+
+<section class="p-4 space-y-4">
+    <h1 class="text-2xl font-semibold text-slate-100">Pipeline</h1>
+
+    @foreach (var p in Model.Pipelines)
+    {
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6">
+            <h2 class="text-lg font-semibold text-slate-100 mb-3">@p.Name</h2>
+            <div class="grid gap-4" style="grid-template-columns: repeat(@p.Stages.Count, minmax(0, 1fr));">
+                @{
+                    var orderedStages = p.Stages.OrderBy(s => s.SortOrder).ToList();
+                }
+                @for (int i = 0; i < orderedStages.Count; i++)
+                {
+                    var stage = orderedStages[i];
+                    var nextStage = i + 1 < orderedStages.Count ? orderedStages[i + 1] : null;
+                    var cards = Model.Items.Where(o => o.StageId == stage.Id).ToList();
+                    <div class="rounded-xl bg-slate-900/60 border border-slate-700 p-3">
+                        <div class="text-xs uppercase text-slate-400 mb-2">@stage.Name (@cards.Count)</div>
+                        <div class="space-y-2">
+                            @foreach (var o in cards)
+                            {
+                                <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-2">
+                                    <div class="text-sm text-slate-100">@o.Name</div>
+                                    <div class="text-xs text-slate-400">@o.Amount.ToString("N2") @o.Currency</div>
+                                    <div class="flex gap-1 mt-2">
+                                        <a class="text-xs text-blue-400 hover:underline" asp-page="/Opportunities/Details" asp-route-id="@o.Id">Open</a>
+                                        @if (nextStage is not null)
+                                        {
+                                            <form method="post" asp-page-handler="AdvanceStage" asp-route-id="@o.Id" asp-route-stageId="@nextStage.Id">
+                                                <button class="text-xs text-emerald-400 hover:underline">&rarr;</button>
+                                            </form>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</section>

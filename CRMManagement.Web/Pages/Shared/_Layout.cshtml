@@ -1,0 +1,490 @@
+﻿@using System
+@using System.Globalization
+
+@{
+    // English comments only inside code.
+
+    string Current() => ViewContext?.HttpContext?.Request.Path.ToString()?.ToLowerInvariant() ?? "/";
+
+    bool IsActive(string p) =>
+        string.Equals(Current(), (p ?? "/").ToLowerInvariant(), StringComparison.Ordinal);
+
+    // Iframe mode: detect from query string OR cookie (persisted across navigation).
+    var isIframe = false;
+    try
+    {
+        var req = ViewContext?.HttpContext?.Request;
+        var resp = ViewContext?.HttpContext?.Response;
+
+        if (req != null && (req.Query.TryGetValue("standalone", out var sv) || req.Query.TryGetValue("__standalone", out sv)))
+        {
+            var v = (sv.ToString() ?? "").Trim();
+            if (string.Equals(v, "1", StringComparison.OrdinalIgnoreCase) || string.Equals(v, "true", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(v))
+            {
+                isIframe = false;
+                resp?.Cookies.Delete("crm_embed");
+            }
+        }
+        else if (req != null && (req.Query.ContainsKey("embed") || req.Query.ContainsKey("iframe")))
+        {
+            var ev = req.Query.ContainsKey("embed") ? req.Query["embed"].ToString() : req.Query["iframe"].ToString();
+            var v = (ev ?? "").Trim();
+            if (string.Equals(v, "1", StringComparison.OrdinalIgnoreCase) || string.Equals(v, "true", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(v))
+            {
+                isIframe = true;
+                resp?.Cookies.Append("crm_embed", "1", new CookieOptions { HttpOnly = false, SameSite = SameSiteMode.None, Secure = true, MaxAge = TimeSpan.FromHours(12) });
+            }
+        }
+        else if (req?.Cookies["crm_embed"] == "1")
+        {
+            isIframe = true;
+        }
+        // Also detect if loaded inside ldatabrain.com iframe via Sec-Fetch-Dest or Referer
+        if (!isIframe && req != null)
+        {
+            var fetchDest = req.Headers["Sec-Fetch-Dest"].ToString();
+            var referer = req.Headers["Referer"].ToString();
+            if (string.Equals(fetchDest, "iframe", StringComparison.OrdinalIgnoreCase)
+                || (!string.IsNullOrEmpty(referer) && referer.Contains("ldatabrain.com", StringComparison.OrdinalIgnoreCase) && !referer.Contains("work.ldatabrain.com", StringComparison.OrdinalIgnoreCase)))
+            {
+                isIframe = true;
+                resp?.Cookies.Append("crm_embed", "1", new CookieOptions { HttpOnly = false, SameSite = SameSiteMode.None, Secure = true, MaxAge = TimeSpan.FromHours(12) });
+            }
+        }
+    }
+    catch
+    {
+        isIframe = false;
+    }
+
+    var showSidebar = (ViewData["ForceHideSidebar"] as bool?) != true;
+
+    // Make IsActive available to partials
+    ViewData["IsActive"] = (Func<string, bool>)IsActive;
+
+    // Language + direction
+    var uiCulture = CultureInfo.CurrentUICulture;
+    var htmlLang = (uiCulture?.TwoLetterISOLanguageName ?? "en").ToLowerInvariant();
+    var htmlDir = (htmlLang == "he" || htmlLang == "ar") ? "rtl" : "ltr";
+
+    // Layout classes
+    string mainClass = isIframe
+        ? $"pt-0 pb-6 pr-5 pl-3 md:pt-0 md:pb-6 md:pr-6 md:pl-2 {(showSidebar ? "md:ml-2" : "")}"
+        : $"py-8 pr-6 pl-4 md:pl-2 {(showSidebar ? "md:ml-2" : "")}";
+
+    ViewData["IsIframe"] = isIframe;
+}
+
+<!DOCTYPE html>
+<html lang="@htmlLang" dir="@htmlDir" class="dark">
+<head>
+    <script>
+        // Set theme ASAP from localStorage to avoid FOUC
+        (function(){try{var t=localStorage.getItem('theme');if(t==='light'){document.documentElement.dataset.theme='light';document.documentElement.classList.remove('dark');document.documentElement.style.colorScheme='light';}else if(t==='black'){document.documentElement.dataset.theme='black';}else{document.documentElement.dataset.theme='gray';}}catch(e){}})();
+    </script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>@(ViewData["Title"] ?? "Work")</title>
+
+    @await Html.PartialAsync("_HeadAssets")
+
+    <style>
+        :root {
+            --sb-width: 14rem;
+            --sb-collapsed-width: 3.5rem;
+            --sb-gutter: .5rem;
+        }
+
+        aside[data-sidebar="main"] {
+            width: var(--sb-width);
+            transition: transform .28s ease, width .28s ease, opacity .2s ease;
+            will-change: transform, width, opacity;
+            box-shadow: 0 10px 30px rgba(0,0,0,.25);
+            scrollbar-gutter: stable;
+        }
+
+        html.sb-preload aside[data-sidebar="main"] {
+            transition: none !important;
+        }
+
+        /* Hide scrollbar flash during initial page load */
+        html.sb-preload {
+            overflow-y: hidden !important;
+        }
+
+        body.sidebar-collapsed aside[data-sidebar="main"] {
+            transform: none;
+            width: var(--sb-collapsed-width);
+            opacity: 1;
+            pointer-events: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,.25);
+        }
+
+        body.sidebar-collapsed #content {
+            margin-inline-start: 0 !important;
+            padding-inline-start: 0 !important;
+        }
+
+        body.sidebar-collapsed aside[data-sidebar="main"] nav .sb-text { display: none !important; }
+        body.sidebar-collapsed aside[data-sidebar="main"] nav .caret-col { display: none !important; }
+        body.sidebar-collapsed aside[data-sidebar="main"] nav summary { justify-content: center; padding-inline: 0.75rem; }
+        body.sidebar-collapsed aside[data-sidebar="main"] nav summary .inline-flex { justify-content: center; }
+
+        body.sidebar-collapsed aside[data-sidebar="main"] nav summary i { color: #38bdf8; }
+
+        body.keep-sb-gutter.sidebar-collapsed #content {
+            padding-inline-start: var(--sb-gutter) !important;
+        }
+
+        @@media (prefers-reduced-motion: reduce) {
+            aside[data-sidebar="main"] { transition: none !important; }
+        }
+
+        /* Iframe / embed mode */
+        body.is-iframe .app-topbar {
+            display: none !important;
+        }
+
+        body.is-iframe .app-shell {
+            min-height: 100vh;
+        }
+
+        body.is-iframe aside[data-sidebar="main"] {
+            position: fixed !important;
+            top: 0 !important;
+            inset-inline-start: 0 !important;
+            height: 100vh !important;
+            z-index: 100;
+            transition: width .25s ease;
+        }
+
+        body.is-iframe #content-shell {
+            margin-inline-start: 14rem; /* md:w-56 */
+        }
+
+        body.is-iframe.sidebar-collapsed aside[data-sidebar="main"] {
+            width: 3.5rem !important;
+            min-width: 3.5rem !important;
+            overflow: visible;
+        }
+
+        body.is-iframe.sidebar-collapsed #content-shell {
+            margin-inline-start: 3.5rem;
+        }
+
+        /* Sidebar collapsed: icon-only mode */
+        body.sidebar-collapsed [data-sidebar="main"] {
+            width: 3.5rem !important;
+            min-width: 3.5rem !important;
+            overflow: visible;
+        }
+        body.sidebar-collapsed [data-sidebar="main"] .sb-text      { display: none !important; }
+        body.sidebar-collapsed [data-sidebar="main"] .caret-col    { display: none !important; }
+        body.sidebar-collapsed [data-sidebar="main"] summary       { justify-content: center; }
+        body.sidebar-collapsed [data-sidebar="main"] summary > div { justify-content: center; }
+        body.sidebar-collapsed [data-sidebar="main"] summary i     { font-size: 1.15rem; }
+
+        body.sidebar-collapsed [data-sidebar="main"] .submenu {
+            border-left: none;
+            margin-left: 0;
+            padding-left: 0;
+            margin-top: .35rem;
+            padding-top: .35rem;
+            padding-bottom: .15rem;
+            border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+            background: transparent;
+            border-radius: 0;
+        }
+        body.sidebar-collapsed [data-sidebar="main"] .submenu a,
+        body.sidebar-collapsed [data-sidebar="main"] .submenu button {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+        }
+        body.sidebar-collapsed [data-sidebar="main"] .submenu .sb-text { display: none !important; }
+
+        body.is-iframe #content {
+            padding-top: 0 !important;
+            padding-right: 1.25rem !important;
+        }
+
+        @@media (min-width: 768px) {
+            body.is-iframe #content {
+                padding-right: 1.5rem !important;
+            }
+        }
+
+        /* ── Mobile: sidebar as slide-in drawer ── */
+        @@media (max-width: 767px) {
+            /* Content takes full width */
+            body.is-iframe #content-shell {
+                margin-inline-start: 0 !important;
+            }
+            body.is-iframe #content {
+                padding-left: 6px !important;
+                padding-right: 6px !important;
+                padding-inline-start: 6px !important;
+                padding-inline-end: 6px !important;
+            }
+            /* Sidebar: off-screen left by default, slides in when open */
+            body.is-iframe aside[data-sidebar="main"],
+            aside[data-sidebar="main"] {
+                display: flex !important;
+                flex-direction: column !important;
+                position: fixed !important;
+                top: 0 !important;
+                inset-inline-start: 0 !important;
+                height: 100vh !important;
+                width: 16rem !important;
+                z-index: 200 !important;
+                transform: translateX(-100%) !important;
+                transition: transform .28s ease !important;
+                box-shadow: none !important;
+            }
+            [dir="rtl"] body.is-iframe aside[data-sidebar="main"],
+            [dir="rtl"] aside[data-sidebar="main"] {
+                transform: translateX(100%) !important;
+            }
+            /* When open — must beat RTL specificity */
+            body.mobile-sb-open aside[data-sidebar="main"],
+            body.mobile-sb-open.is-iframe aside[data-sidebar="main"],
+            [dir="rtl"] body.mobile-sb-open aside[data-sidebar="main"],
+            [dir="rtl"] body.mobile-sb-open.is-iframe aside[data-sidebar="main"] {
+                transform: translateX(0) !important;
+                box-shadow: 4px 0 24px rgba(0,0,0,.4) !important;
+            }
+            /* Show text labels (undo sidebar-collapsed) */
+            body.mobile-sb-open aside[data-sidebar="main"] .sb-text { display: inline !important; }
+            body.mobile-sb-open aside[data-sidebar="main"] .caret-col { display: flex !important; }
+            body.mobile-sb-open aside[data-sidebar="main"] { width: 16rem !important; }
+
+            /* Backdrop */
+            #mobile-sb-backdrop {
+                display: none;
+                position: fixed;
+                inset: 0;
+                z-index: 199;
+                background: rgba(0,0,0,.45);
+            }
+            body.mobile-sb-open #mobile-sb-backdrop {
+                display: block;
+            }
+
+        }
+        @@media (min-width: 768px) {
+            #mobile-sb-backdrop {
+                display: none !important;
+            }
+        }
+
+        /* Let direction follow the page language */
+
+        .site-bg-layer {
+            background-image: var(--app-bg-layer, none);
+            background-repeat: no-repeat;
+            background-size: cover;
+            min-height: 100vh;
+        }
+
+        /* LIGHT theme: clean white, no gradients — dual selector for data-theme AND class */
+        html[data-theme="light"] body, html:not(.dark) body,
+        html[data-theme="light"] .site-bg-layer, html:not(.dark) .site-bg-layer {
+            background-color: #f0f2f5 !important;
+            background-image: none !important;
+            color: #16191f !important;
+        }
+        html[data-theme="light"] .text-slate-100, html:not(.dark) .text-slate-100 { color: #16191f !important; }
+
+        /* BLACK theme: true-black body, near-black gradient */
+        html[data-theme="black"] body {
+            background-color: #000 !important;
+        }
+        html[data-theme="black"] .site-bg-layer {
+            background-color: #000 !important;
+        }
+
+        /* BLACK: force slate backgrounds to near-black inside main content */
+        html[data-theme="black"] #content [class*="bg-slate-7"] {
+            background-color: rgba(28,28,28,1) !important;
+        }
+        html[data-theme="black"] #content [class*="bg-slate-8"] {
+            background-color: rgba(17,17,17,1) !important;
+        }
+        html[data-theme="black"] #content [class*="bg-slate-9"] {
+            background-color: #000 !important;
+        }
+
+        /* BLACK: shadows more subtle */
+        html[data-theme="black"] #content .shadow-soft,
+        html[data-theme="black"] #content [class*="shadow-"] {
+            box-shadow: 0 1px 4px rgba(0,0,0,.4) !important;
+        }
+
+        /* BLACK: hover */
+        html[data-theme="black"] #content [class*="hover:bg-slate"]:hover {
+            background-color: rgba(38,38,38,1) !important;
+        }
+
+        /* LIGHT: force ALL dark slate backgrounds to white inside main content */
+        html[data-theme="light"] #content [class*="bg-slate-7"], html:not(.dark) #content [class*="bg-slate-7"],
+        html[data-theme="light"] #content [class*="bg-slate-8"], html:not(.dark) #content [class*="bg-slate-8"],
+        html[data-theme="light"] #content [class*="bg-slate-9"], html:not(.dark) #content [class*="bg-slate-9"] {
+            background-color: #ffffff !important;
+        }
+
+        /* LIGHT: force ALL borders to clean gray */
+        html[data-theme="light"] #content [class*="border-slate-"], html:not(.dark) #content [class*="border-slate-"] {
+            border-color: #d5dbdb !important;
+        }
+
+        /* LIGHT: force ALL text readable */
+        html[data-theme="light"] #content .text-slate-100, html:not(.dark) #content .text-slate-100,
+        html[data-theme="light"] #content .text-slate-200, html:not(.dark) #content .text-slate-200,
+        html[data-theme="light"] #content .text-white, html:not(.dark) #content .text-white {
+            color: #16191f !important;
+        }
+        html[data-theme="light"] #content .text-slate-300, html:not(.dark) #content .text-slate-300 { color: #545b64 !important; }
+        html[data-theme="light"] #content .text-slate-400, html:not(.dark) #content .text-slate-400 { color: #687078 !important; }
+        html[data-theme="light"] #content .text-slate-500, html:not(.dark) #content .text-slate-500 { color: #879596 !important; }
+        html[data-theme="light"] #content [style*="color:#94a3b8"], html:not(.dark) #content [style*="color:#94a3b8"] { color: #545b64 !important; }
+
+        /* LIGHT: shadows */
+        html[data-theme="light"] #content .shadow-soft, html:not(.dark) #content .shadow-soft,
+        html[data-theme="light"] #content [class*="shadow-"], html:not(.dark) #content [class*="shadow-"] {
+            box-shadow: 0 1px 4px rgba(0,0,0,.1) !important;
+        }
+
+        /* LIGHT: hover */
+        html[data-theme="light"] #content [class*="hover:bg-slate"]:hover, html:not(.dark) #content [class*="hover:bg-slate"]:hover {
+            background-color: #f2f3f3 !important;
+        }
+
+        /* LIGHT: active blue pill */
+        html[data-theme="light"] #content .bg-slate-700.text-white, html:not(.dark) #content .bg-slate-700.text-white {
+            background-color: #0073bb !important;
+            color: #fff !important;
+        }
+
+        /* LIGHT: links */
+        html[data-theme="light"] #content a:hover, html:not(.dark) #content a:hover {
+            color: #0073bb !important;
+        }
+    </style>
+</head>
+
+<body class="app-body min-h-screen bg-slate-900 text-slate-100 antialiased selection:bg-brand/30 @(isIframe ? "is-iframe" : "")">
+
+    <!-- Mobile sidebar backdrop -->
+    <div id="mobile-sb-backdrop"></div>
+
+    <div class="app-shell site-bg-layer min-h-screen flex flex-col">
+
+        @* Bridge partial (no visible top bar) *@
+        @await Html.PartialAsync("_TopBar")
+
+        <div class="flex flex-1" dir="@htmlDir" data-dir-sync>
+            @if (showSidebar)
+            {
+                <div dir="@htmlDir" data-dir-sync>
+                    @await Component.InvokeAsync("Sidebar", new { showSidebar = showSidebar })
+                </div>
+            }
+
+            <div id="content-shell" class="app-content relative flex-1">
+                <main id="content" class="app-main @mainClass" dir="@htmlDir" data-dir-sync>
+                    @RenderBody()
+                </main>
+            </div>
+        </div>
+
+        @await Html!.PartialAsync("_FooterScripts")
+    </div>
+
+    @* UI Editor: inject saved DOM overrides for dom-apply.js *@
+    @{
+        var uiDomRaw = ViewContext?.HttpContext?.Items["ui.dom_json"] as string;
+    }
+    @if (!string.IsNullOrWhiteSpace(uiDomRaw))
+    {
+        <script>
+            window.__UI_DOM__ = @Html!.Raw(uiDomRaw!);
+        </script>
+    }
+
+    @RenderSection("Scripts", required: false)
+
+    <script>
+        (function () {
+            try {
+                // Detect iframe mode: query param OR actually inside an iframe
+                var inIframe = false;
+                try { inIframe = window.self !== window.top; } catch (_) { inIframe = true; }
+                var params = new URLSearchParams(window.location.search);
+                if (params.get('embed') === '1' || params.get('iframe') === '1' || inIframe) {
+                    document.body.classList.add('is-iframe');
+                    try { sessionStorage.setItem('crm-embed', '1'); } catch (_) { }
+                } else if (sessionStorage.getItem('crm-embed') === '1') {
+                    document.body.classList.add('is-iframe');
+                }
+
+                document.documentElement.classList.add('sb-preload');
+                var isCollapsed = (localStorage.getItem('sidebarCollapsed') === '1');
+                if (isCollapsed) {
+                    if (document.body) document.body.classList.add('sidebar-collapsed');
+                    document.addEventListener('DOMContentLoaded', function () {
+                        document.body.classList.add('sidebar-collapsed');
+                    });
+                }
+                document.addEventListener('DOMContentLoaded', function () {
+                    setTimeout(function () {
+                        document.documentElement.classList.remove('sb-preload');
+                    }, 700);
+                });
+            } catch (e) {
+                try { document.documentElement.classList.remove('sb-preload'); } catch (_) { }
+            }
+        })();
+
+        /* ── Mobile sidebar drawer (backdrop + close helpers) ── */
+        (function () {
+            function isMobile() { return window.innerWidth < 768; }
+
+            var backdrop = document.getElementById('mobile-sb-backdrop');
+
+            function closeSidebar() {
+                document.body.classList.remove('mobile-sb-open');
+            }
+
+            if (backdrop) {
+                backdrop.addEventListener('click', function () { closeSidebar(); });
+            }
+
+            /* Close on nav link tap inside sidebar */
+            document.addEventListener('click', function (e) {
+                if (!isMobile() || !document.body.classList.contains('mobile-sb-open')) return;
+                var sidebar = document.querySelector('aside[data-sidebar="main"]');
+                if (!sidebar) return;
+                var link = e.target.closest('a');
+                if (link && sidebar.contains(link)) {
+                    setTimeout(closeSidebar, 120);
+                }
+            });
+
+            /* Close on Escape */
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && document.body.classList.contains('mobile-sb-open')) {
+                    closeSidebar();
+                }
+            });
+
+            /* Close if resized above mobile breakpoint */
+            window.addEventListener('resize', function () {
+                if (!isMobile() && document.body.classList.contains('mobile-sb-open')) {
+                    closeSidebar();
+                }
+            });
+        })();
+    </script>
+
+</body>
+</html>

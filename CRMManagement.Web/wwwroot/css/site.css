@@ -1,0 +1,1645 @@
+﻿/* ==== One-time page-transition suppression (Send only) ==== */
+/* When html has .no-animate, disable animate.css and any CSS transitions */
+html.no-animate .animate__animated {
+    animation: none !important;
+}
+
+html.no-animate *,
+html.no-animate *::before,
+html.no-animate *::after {
+    transition: none !important;
+}
+/* Hide any page loader on this one load */
+html.no-animate .page-loader {
+    display: none !important;
+    animation: none !important;
+}
+/* Stop shimmer animation as well */
+html.no-animate .loader-shimmer > span {
+    animation: none !important;
+}
+
+/* Prevent layout shifts when vertical scrollbar appears/disappears between pages */
+html {
+    scrollbar-gutter: stable;
+    overflow-x: hidden;
+}
+
+/* ===== Themed border colors (match main site) =====
+   Generic Tailwind border-width utilities do not set a color;
+   override them per theme so borders look consistent across themes. */
+html[data-theme="gray"],
+html[data-theme="black"] {
+    --ui-line: #33343a;
+}
+
+html[data-theme="light"] {
+    --ui-line: #d5dbdb;
+}
+
+.border,
+.border-t,
+.border-b,
+.border-l,
+.border-r,
+.border-s,
+.border-e {
+    border-color: var(--ui-line) !important;
+}
+
+/* Keep explicit semantic colors working */
+.border-transparent { border-color: transparent !important; }
+.border-brand { border-color: rgb(59 130 246 / var(--tw-border-opacity, 1)) !important; }
+.border-red-500 { border-color: rgb(239 68 68 / var(--tw-border-opacity, 1)) !important; }
+.border-red-600 { border-color: rgb(220 38 38 / var(--tw-border-opacity, 1)) !important; }
+.border-amber-500 { border-color: rgb(245 158 11 / var(--tw-border-opacity, 1)) !important; }
+.border-emerald-500 { border-color: rgb(16 185 129 / var(--tw-border-opacity, 1)) !important; }
+.border-sky-600 { border-color: rgb(2 132 199 / var(--tw-border-opacity, 1)) !important; }
+.border-indigo-500\/70 { border-color: rgba(99, 102, 241, 0.7) !important; }
+
+/* ===== Themed select controls (match main site) ===== */
+html[data-theme="gray"],
+html[data-theme="black"],
+html[data-theme="light"] {
+    --ui-select-bg: color-mix(in srgb, var(--ui-card, rgba(51, 65, 85, 0.82)) 84%, var(--ui-bg, #0f172a) 16%);
+    --ui-select-menu-bg: color-mix(in srgb, var(--ui-card, rgba(51, 65, 85, 0.88)) 90%, var(--ui-bg, #0f172a) 10%);
+    --ui-select-border: color-mix(in srgb, currentColor 16%, transparent);
+    --ui-select-text: #f8fafc;
+    --ui-select-accent: color-mix(in srgb, var(--ui-brand, #3b82f6) 16%, var(--ui-card, rgba(51, 65, 85, 0.88)) 84%);
+}
+
+html[data-theme="black"] {
+    --ui-select-bg: color-mix(in srgb, #000 38%, var(--ui-card, rgba(17, 17, 17, 0.92)) 62%);
+    --ui-select-menu-bg: color-mix(in srgb, #000 52%, var(--ui-card, rgba(17, 17, 17, 0.95)) 48%);
+    --ui-select-border: rgba(148, 163, 184, 0.24);
+    --ui-select-text: #f8fafc;
+    --ui-select-accent: color-mix(in srgb, var(--ui-brand, #3b82f6) 18%, #111827 82%);
+}
+
+html[data-theme="light"] {
+    --ui-select-bg: #ffffff;
+    --ui-select-menu-bg: #ffffff;
+    --ui-select-border: #aab7b8;
+    --ui-select-text: #16191f;
+    --ui-select-accent: #e8f0fe;
+}
+
+select {
+    background-color: var(--ui-select-bg);
+    color: var(--ui-select-text);
+    border-color: var(--ui-select-border);
+}
+
+html[data-theme="gray"] select,
+html[data-theme="black"] select {
+    color-scheme: dark;
+}
+
+html[data-theme="light"] select {
+    color-scheme: light;
+}
+
+select option,
+select optgroup {
+    background-color: var(--ui-select-menu-bg);
+    color: var(--ui-select-text);
+}
+
+select option:checked,
+select option:hover,
+select option:focus {
+    background: var(--ui-select-accent);
+    color: var(--ui-select-text);
+}
+
+/* Hide the vertical scrollbar flash during the initial page load */
+html.sb-preload {
+    overflow-y: hidden !important;
+}
+
+/* ===== Tooltips ===== */
+.tooltip-parent {
+    position: relative;
+}
+
+.tooltip {
+    display: none;
+    white-space: nowrap;
+    border-radius: .375rem;
+    background: #1e293b;
+    color: #f1f5f9;
+    font-size: .75rem;
+    padding: .25rem .5rem;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1);
+    z-index: 3500;
+    pointer-events: none;
+}
+
+.tooltip-local {
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%) translateY(8px);
+}
+
+.tooltip-fixed-side {
+    position: fixed;
+    transform: translateY(-50%);
+}
+
+.tooltip-parent:hover .tooltip,
+.tooltip-parent:focus-within .tooltip {
+    display: block;
+}
+
+body.hide-tooltips .tooltip {
+    display: none !important;
+}
+
+.tooltip-parent[aria-expanded="true"] .tooltip {
+    display: none !important;
+}
+
+/* ===== Sidebar flyouts (scoped!) ===== */
+/* ⛔️ היה כאן: .submenu { position: fixed; ... } – זה דרס תתי-תפריטים סטטיים.
+   ✅ במקום זאת, נרכז את הסטייל לפליי-אאוטים בלבד. */
+aside[data-sidebar="main"] .docker-flyout {
+    position: fixed;
+    z-index: 4000;
+    width: 11rem;
+    border-radius: .75rem;
+    background: #334155;
+    color: #e5e7eb;
+    border: 1px solid rgba(71,85,105,.6);
+    box-shadow: 0 10px 25px rgba(0,0,0,.35);
+    padding: .5rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .15s ease, visibility .15s ease, transform .15s ease;
+}
+/* הצגה ב-hover/focus (אם אין JS) */
+[data-menu="docker-group"]:is(:hover, :focus-within) .docker-flyout {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+}
+
+#chat-top-panel {
+    z-index: 5000;
+}
+
+/* ===== Page Loader (scoped to content area) ===== */
+/* Common loader styles */
+.page-loader {
+    inset: 0;
+    z-index: 9999;
+    display: none; /* .show => flex */
+    align-items: center;
+    justify-content: center;
+    background: rgba(2,6,23,0.85);
+    backdrop-filter: blur(6px);
+}
+/* Full-screen variant if ever needed */
+.page-loader--fixed {
+    position: fixed;
+}
+/* Inset variant: covers only its positioned parent (#content-shell) */
+.page-loader--inset {
+    position: absolute;
+}
+/* Visible state */
+.page-loader.show {
+    display: flex;
+}
+
+.loader-shimmer {
+    height: 6px;
+    width: 14rem;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: rgba(148,163,184,.35);
+}
+
+    .loader-shimmer > span {
+        display: block;
+        height: 100%;
+        width: 40%;
+        background: currentColor;
+        animation: loader-slide 1.2s linear infinite;
+    }
+
+@keyframes loader-slide {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    50% {
+        transform: translateX(50%);
+    }
+
+    100% {
+        transform: translateX(300%);
+    }
+}
+
+/* ===== Restore Tailwind responsive display utilities (shim) ===== */
+@media (min-width: 640px) {
+    .sm\:block {
+        display: block !important;
+    }
+
+    .sm\:inline-block {
+        display: inline-block !important;
+    }
+
+    .sm\:flex {
+        display: flex !important;
+    }
+}
+
+@media (min-width: 768px) {
+    .md\:block {
+        display: block !important;
+    }
+
+    .md\:inline-flex {
+        display: inline-flex !important;
+    }
+
+    .md\:flex {
+        display: flex !important;
+    }
+}
+
+/* ===== GraphicsManagement: Controls row layout =====
+   Tailwind output.css in this module doesn't include all lg:* grid/span utilities,
+   so we use a tiny, scoped CSS grid to keep the controls on one row on desktop.
+*/
+.gm-controls-grid {
+    grid-template-columns: 1fr;
+}
+
+.gm-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+    .gm-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .gm-controls-grid {
+        grid-template-columns:
+            minmax(0, 2.2fr)
+            minmax(0, 1.2fr)
+            minmax(0, 1.2fr)
+            minmax(0, 1.4fr);
+        align-items: end;
+    }
+
+    .gm-controls-help {
+        grid-column: 1 / -1;
+    }
+
+    .gm-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: center;
+    }
+}
+
+/* Utilities בטוחים לשימוש מקומי (במקום .hidden) */
+.u-hidden {
+    display: none !important;
+}
+
+.only-md-flex {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .only-md-flex {
+        display: flex !important;
+    }
+}
+
+/* ===== Global Theme Layer (gray / light / black) =====
+   Goal:
+   - Default stays GRAY (no white flash)
+   - LIGHT uses a soft white across the site
+   - BLACK adds a deeper dark option
+   - Icons follow text color (currentColor)
+*/
+
+:root {
+    /* If UI customization provides --ui-bg, we use it for the gray theme. */
+    --app-bg-gray: var(--ui-bg, #0F172A);
+    --app-bg-layer-gray:
+        radial-gradient(circle at 20% 20%, rgba(30,41,59,.6) 0%, rgba(15,23,42,0) 60%),
+        radial-gradient(circle at 80% 10%, rgba(2,6,23,.6) 0%, rgba(15,23,42,0) 70%),
+        linear-gradient(to bottom right,
+            rgba(15,23,42,1) 0%,
+            rgba(30,41,59,1) 50%,
+            rgba(15,23,42,1) 100%);
+    --app-bg-layer-black:
+        radial-gradient(circle at 20% 20%, rgba(0,0,0,.65) 0%, rgba(0,0,0,0) 60%),
+        radial-gradient(circle at 80% 10%, rgba(0,0,0,.75) 0%, rgba(0,0,0,0) 70%),
+        linear-gradient(to bottom right,
+            rgba(0,0,0,1) 0%,
+            rgba(10,10,10,1) 50%,
+            rgba(0,0,0,1) 100%);
+    --app-bg-layer-light: none;
+    --app-bg-layer-light-UNUSED:
+        radial-gradient(circle at 20% 20%, rgba(226,232,240,.9) 0%, rgba(248,250,252,0) 60%),
+        radial-gradient(circle at 80% 10%, rgba(203,213,225,.9) 0%, rgba(248,250,252,0) 70%),
+        linear-gradient(to bottom right,
+            rgba(248,250,252,1) 0%,
+            rgba(226,232,240,1) 50%,
+            rgba(248,250,252,1) 100%);
+}
+
+/* ===== Space Board (Jira-like) ===== */
+.jira-board {
+    --jira-bg: rgba(51,65,85,0.6);
+    --jira-surface: rgba(51,65,85,0.8);
+    --jira-border: rgba(71,85,105,0.5);
+    --jira-text: #f1f5f9;
+    --jira-muted: #94a3b8;
+    --jira-brand: #3b82f6;
+    --jira-pill: rgba(124,58,237,0.25);
+    --jira-pill-text: #c4b5fd;
+    color: var(--jira-text);
+}
+
+.jira-board .jira-surface {
+    background: var(--jira-surface);
+    border: 1px solid var(--jira-border);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.jira-board .jira-tab {
+    color: var(--jira-muted);
+    border-bottom: 2px solid transparent;
+}
+
+.jira-board .jira-tab.is-active {
+    color: var(--jira-text);
+    border-bottom-color: var(--jira-brand);
+    font-weight: 600;
+}
+
+.jira-board .jira-board-shell {
+    background: var(--jira-bg);
+    border: 1px solid var(--jira-border);
+}
+
+.jira-board .jira-column {
+    background: rgba(30,41,59,0.6);
+    border: 1px solid var(--jira-border);
+    border-radius: 12px;
+}
+
+.jira-board .jira-column-title {
+    color: #cbd5e1;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+}
+
+.jira-board .jira-count {
+    background: rgba(71,85,105,0.6);
+    color: #cbd5e1;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.jira-board .jira-card {
+    background: rgba(51,65,85,0.8);
+    border: 1px solid rgba(71,85,105,0.5);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+}
+
+.jira-board .jira-pill {
+    background: var(--jira-pill);
+    color: var(--jira-pill-text);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.jira-board .jira-quickstart,
+.jira-summary .jira-quickstart,
+.space-summary .jira-quickstart {
+    background: rgba(51,65,85,0.8);
+    border: 1px solid var(--jira-border);
+}
+
+.jira-board .jira-quickstart-head,
+.jira-summary .jira-quickstart-head,
+.space-summary .jira-quickstart-head {
+    background: #7c3aed;
+    color: #ffffff;
+}
+
+.jira-board .jira-quickstart-card,
+.jira-summary .jira-quickstart-card,
+.space-summary .jira-quickstart-card {
+    background: rgba(30,41,59,0.6);
+    border: 1px solid rgba(71,85,105,0.5);
+}
+
+/* ===== Space Summary (Jira-like) ===== */
+.jira-summary {
+    --jira-bg: #f4f5f7;
+    --jira-surface: #ffffff;
+    --jira-border: #e2e8f0;
+    --jira-text: #0f172a;
+    --jira-muted: #64748b;
+    --jira-brand: #3b82f6;
+    color: var(--jira-text);
+}
+
+/* ===== Space Summary (Dark scheme, stable layout) =====
+   Tailwind build in this workspace doesn't include every size/responsive utility.
+   These scoped rules keep the Summary layout + charts consistent.
+*/
+.space-summary .summary-container {
+    max-width: 80rem; /* matches Tailwind max-w-7xl */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.space-summary .summary-tiles {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.space-summary .summary-two-col {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+    .space-summary .summary-two-col {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.space-summary .summary-donut {
+    position: relative;
+    width: 10rem;
+    height: 10rem;
+    border-radius: 9999px;
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.25);
+}
+
+.space-summary .summary-donut-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.space-summary .summary-donut-center {
+    inset: 1.5rem; /* ring thickness ~ 1.5rem on each side */
+}
+
+.space-summary .summary-bar {
+    width: 11rem; /* close to Tailwind w-44 */
+    max-width: 45vw;
+}
+
+/* Space Summary: filter dropdown should be solid and darker blue. */
+.space-summary .summary-filter-dropdown {
+    background-color: #13253e !important;
+    border-color: #2a3a5f !important;
+}
+
+.space-summary .summary-filter-dropdown .summary-filter-header,
+.space-summary .summary-filter-dropdown .summary-filter-footer {
+    background-color: #0f1f37;
+    border-color: #25345a !important;
+}
+
+.space-summary .summary-filter-dropdown input[type="text"],
+.space-summary .summary-filter-dropdown input[type="date"] {
+    background-color: #0b162b !important;
+    border-color: #2a3a5f !important;
+}
+
+/* Space Code (Jira-like connect page, dark/blue theme) */
+.space-code .space-code-container {
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.space-code .space-code-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    /* Keep the main panel/rail placement consistent even if the document direction is RTL. */
+    direction: ltr;
+}
+
+.space-code .space-code-grid > * {
+    direction: ltr;
+}
+
+@media (min-width: 1024px) {
+    .space-code .space-code-grid {
+        grid-template-columns: 1fr 340px;
+        align-items: start;
+    }
+}
+
+.space-code .space-code-provider {
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.18);
+    padding: 12px;
+}
+
+.space-code .space-code-provider-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: rgba(15, 23, 42, 0.28);
+    padding: 12px;
+    color: rgba(226, 232, 240, 0.95);
+    text-align: left;
+}
+
+.space-code .space-code-provider-left > i {
+    width: 22px;
+    display: inline-flex;
+    justify-content: center;
+    font-size: 18px;
+    color: rgba(241, 245, 249, 0.95);
+}
+
+.space-code .space-code-provider-btn:hover:not(:disabled) {
+    background: rgba(15, 23, 42, 0.4);
+}
+
+.space-code .space-code-provider-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.space-code .space-code-provider-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.space-code .space-code-provider-title {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(241, 245, 249, 0.95);
+}
+
+.space-code .space-code-provider-sub {
+    display: block;
+    font-size: 12px;
+    color: rgba(148, 163, 184, 0.95);
+}
+
+.space-code .space-code-provider-right {
+    color: rgba(148, 163, 184, 0.95);
+}
+
+.space-code .space-code-step {
+    display: grid;
+    grid-template-columns: 14px 1fr;
+    gap: 10px;
+    align-items: start;
+}
+
+.space-code .space-code-step-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 9999px;
+    border: 2px solid rgba(148, 163, 184, 0.55);
+    margin-top: 3px;
+}
+
+.space-code .space-code-step-dot.is-done {
+    border-color: rgba(16, 185, 129, 0.9);
+    background: rgba(16, 185, 129, 0.25);
+}
+
+.jira-summary .jira-surface {
+    background: var(--jira-surface);
+    border: 1px solid var(--jira-border);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.jira-summary .jira-tab {
+    color: var(--jira-muted);
+    border-bottom: 2px solid transparent;
+}
+
+.jira-summary .jira-tab.is-active {
+    color: var(--jira-text);
+    border-bottom-color: var(--jira-brand);
+    font-weight: 600;
+}
+
+.jira-summary .jira-board-shell {
+    background: var(--jira-bg);
+    border: 1px solid var(--jira-border);
+}
+
+.jira-summary .summary-card {
+    background: #ffffff;
+    border: 1px solid var(--jira-border);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.jira-summary .summary-card-label {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.jira-summary .summary-card-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-top: 0.25rem;
+}
+
+.jira-summary .summary-card-sub {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 0.25rem;
+}
+
+.jira-summary .summary-panel {
+    background: #ffffff;
+    border: 1px solid var(--jira-border);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.jira-summary .summary-panel-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.jira-summary .summary-panel-sub {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.2rem;
+}
+
+.jira-summary .summary-progress {
+    height: 0.4rem;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 0.35rem;
+}
+
+.jira-summary .summary-progress-fill {
+    height: 100%;
+    background: #3b82f6;
+}
+
+.jira-summary .summary-progress-fill.summary-progress-closed {
+    background: #94a3b8;
+}
+
+.jira-summary .summary-activity {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+}
+
+.jira-summary .summary-activity-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 999px;
+    background: #cbd5f5;
+    margin-top: 0.3rem;
+}
+
+html[data-theme="gray"] {
+    color-scheme: dark;
+    --app-bg-layer: var(--app-bg-layer-gray);
+
+    --ui-bg: #0F172A;
+    --ui-card: rgba(51,65,85,0.80);
+}
+
+html[data-theme="black"] {
+    color-scheme: dark;
+    --app-bg-layer: var(--app-bg-layer-black);
+
+    --ui-bg: #000;
+    --ui-card: rgba(17,17,17,0.92);
+}
+
+html[data-theme="light"] {
+    color-scheme: light;
+    --app-bg-layer: none;
+
+    --ui-bg: #f0f2f5;
+    --ui-card: #ffffff;
+    --ui-line: #d5dbdb;
+}
+
+/* Background layer */
+html[data-theme="gray"] body {
+    background-color: var(--app-bg-gray) !important;
+    color: #f1f5f9;
+}
+
+html[data-theme="black"] body {
+    background-color: #000 !important;
+    color: #f8fafc;
+}
+
+html[data-theme="light"] body {
+    background-color: #f0f2f5 !important;
+    color: #16191f;
+}
+
+/* Roles table header: black in dark themes */
+html[data-theme="gray"] table.roles-table thead,
+html[data-theme="black"] table.roles-table thead {
+    background-color: rgba(0,0,0,.65) !important;
+}
+
+html[data-theme="light"] table.roles-table thead {
+    /* Keep consistent with other tables: dark header + light text */
+    background-color: rgba(30,41,59,.88) !important; /* slate-800/90-ish */
+    color: #f1f5f9;
+}
+
+html[data-theme="gray"] .roles-table-shell,
+html[data-theme="black"] .roles-table-shell {
+    background-color: rgba(0,0,0,.35) !important;
+}
+
+html[data-theme="light"] .roles-table-shell {
+    /* LIGHT theme normally remaps bg-slate-* to light surfaces; keep this table dark */
+    background-color: rgba(51,65,85,.80) !important; /* slate-700/80 */
+    color: #f1f5f9;
+}
+
+html[data-theme="gray"] table.roles-table,
+html[data-theme="black"] table.roles-table {
+    background-color: rgba(0,0,0,.45) !important;
+}
+
+html[data-theme="light"] table.roles-table {
+    background-color: rgba(30,41,59,.35) !important;
+}
+
+/* Ensure Tailwind text utilities stay readable inside Roles table (scoped). */
+html[data-theme="light"] .roles-table-shell .text-slate-100,
+html[data-theme="light"] .roles-table-shell .text-slate-200,
+html[data-theme="light"] .roles-table-shell .text-slate-300,
+html[data-theme="light"] .roles-table-shell .text-slate-400,
+html[data-theme="light"] .roles-table-shell .text-slate-500 {
+    color: #f1f5f9 !important;
+}
+
+html[data-theme="gray"] table.roles-table tbody tr,
+html[data-theme="black"] table.roles-table tbody tr {
+    background-color: rgba(0,0,0,.18) !important;
+}
+
+html[data-theme="gray"] table.roles-table tbody tr:hover,
+html[data-theme="black"] table.roles-table tbody tr:hover {
+    background-color: rgba(255,255,255,.05) !important;
+}
+
+/* General Settings (Key/Value/Notes tables): follow UI customization tokens */
+section[data-page="general-settings"] {
+    /* Fallbacks match the previous look if UI variables are missing. */
+    --gs-table-bg: var(--ui-card, rgba(0,0,0,.42));
+    --gs-table-head-bg: rgba(0,0,0,.78);
+    --gs-table-row-bg: transparent;
+    --gs-table-row-alt-bg: rgba(0,0,0,.18);
+    --gs-table-row-hover-bg: rgba(255,255,255,.05);
+    --gs-table-divider: rgba(148,163,184,.28);
+
+    /* Extra surfaces used by Tailwind utility classes within this page (inputs/tabs). */
+    --gs-surface-1: var(--ui-card, rgba(0,0,0,.42));
+    --gs-surface-2: rgba(0,0,0,.35);
+    --gs-input-bg: rgba(0,0,0,.35);
+}
+
+/* Dark themes: derive from ui-card / ui-bg when possible. */
+/* Gray theme: avoid pure black; match the site's slate/card palette */
+html[data-theme="gray"] section[data-page="general-settings"] {
+    --gs-table-bg: color-mix(in srgb, var(--ui-card, rgba(51,65,85,0.8)) 95%, transparent);
+    /* Similar to Tailwind bg-slate-800/80 feel, but derived from ui tokens */
+    --gs-table-head-bg: color-mix(in srgb, var(--ui-card, rgba(51,65,85,0.8)) 78%, var(--ui-bg, #0F172A) 22%);
+    --gs-table-row-bg: transparent;
+    --gs-table-row-alt-bg: color-mix(in srgb, var(--ui-card, rgba(51,65,85,0.8)) 70%, var(--ui-bg, #0F172A) 30%);
+    --gs-table-row-hover-bg: color-mix(in srgb, var(--ui-brand, #3B82F6) 12%, var(--ui-card, rgba(51,65,85,0.8)) 88%);
+    --gs-table-divider: color-mix(in srgb, currentColor 16%, transparent);
+
+    --gs-surface-1: color-mix(in srgb, var(--ui-card, rgba(51,65,85,0.8)) 92%, transparent);
+    --gs-surface-2: color-mix(in srgb, var(--ui-card, rgba(51,65,85,0.8)) 72%, var(--ui-bg, #0F172A) 28%);
+    --gs-input-bg: color-mix(in srgb, var(--ui-card, rgba(51,65,85,0.8)) 84%, var(--ui-bg, #0F172A) 16%);
+}
+
+/* Black theme: keep the header darker and more contrasty */
+html[data-theme="black"] section[data-page="general-settings"] {
+    --gs-table-bg: color-mix(in srgb, var(--ui-card, rgba(51,65,85,0.8)) 88%, #000 12%);
+    --gs-table-head-bg: color-mix(in srgb, #000 70%, var(--ui-card, rgba(51,65,85,0.8)) 30%);
+    --gs-table-row-bg: transparent;
+    --gs-table-row-alt-bg: color-mix(in srgb, #000 35%, var(--ui-card, rgba(51,65,85,0.8)) 65%);
+    --gs-table-row-hover-bg: color-mix(in srgb, var(--ui-brand, #3B82F6) 12%, #000 88%);
+    --gs-table-divider: color-mix(in srgb, currentColor 16%, transparent);
+
+    --gs-surface-1: color-mix(in srgb, var(--ui-card, rgba(51,65,85,0.8)) 86%, #000 14%);
+    --gs-surface-2: color-mix(in srgb, #000 55%, var(--ui-card, rgba(51,65,85,0.8)) 45%);
+    --gs-input-bg: color-mix(in srgb, #000 35%, var(--ui-card, rgba(51,65,85,0.8)) 65%);
+}
+
+/* Light theme: keep a soft, readable look using ui-card + a tiny brand tint on hover. */
+html[data-theme="light"] section[data-page="general-settings"] {
+    /* Keep Settings table + tabs consistent with Projects (dark table chrome) even in LIGHT. */
+    --gs-table-bg: color-mix(in srgb, var(--ui-card, rgba(51,65,85,0.8)) 92%, transparent);
+    --gs-table-head-bg: color-mix(in srgb, var(--ui-card, rgba(51,65,85,0.8)) 78%, var(--ui-bg, #0F172A) 22%);
+    --gs-table-row-bg: transparent;
+    --gs-table-row-alt-bg: color-mix(in srgb, var(--ui-card, rgba(51,65,85,0.8)) 70%, var(--ui-bg, #0F172A) 30%);
+    --gs-table-row-hover-bg: color-mix(in srgb, var(--ui-brand, #3B82F6) 12%, var(--ui-card, rgba(51,65,85,0.8)) 88%);
+    --gs-table-divider: color-mix(in srgb, currentColor 16%, transparent);
+
+    --gs-surface-1: color-mix(in srgb, var(--ui-card, rgba(51,65,85,0.8)) 92%, transparent);
+    --gs-surface-2: color-mix(in srgb, var(--ui-card, rgba(51,65,85,0.8)) 72%, var(--ui-bg, #0F172A) 28%);
+
+    /* Keep form controls readable (light surface + dark text) in LIGHT. */
+    --gs-input-bg: color-mix(in srgb, #0f172a 3%, var(--ui-card, rgba(255,255,255,.92)) 97%);
+}
+
+/* LIGHT: General Settings tabs */
+html[data-theme="light"] section[data-page="general-settings"] > .max-w-3xl .inline-flex {
+    background-color: #ffffff !important;
+    border-color: #d5dbdb !important;
+}
+
+html[data-theme="light"] section[data-page="general-settings"] > .max-w-3xl .inline-flex a {
+    color: #16191f !important;
+}
+
+html[data-theme="light"] section[data-page="general-settings"] > .max-w-3xl .inline-flex a i {
+    color: currentColor !important;
+}
+
+html[data-theme="light"] section[data-page="general-settings"] > .max-w-3xl .inline-flex a:hover {
+    background-color: #f2f3f3 !important;
+}
+
+/* Active tab */
+html[data-theme="light"] section[data-page="general-settings"] > .max-w-3xl .inline-flex a.bg-brand {
+    background-color: #e8f0fe !important;
+    color: #0073bb !important;
+}
+
+section[data-page="general-settings"] table {
+    background-color: var(--gs-table-bg) !important;
+}
+
+section[data-page="general-settings"] table thead tr {
+    background-color: var(--gs-table-head-bg) !important;
+    color: inherit;
+}
+
+section[data-page="general-settings"] table tbody tr {
+    background-color: var(--gs-table-row-bg) !important;
+}
+
+section[data-page="general-settings"] table tbody tr:nth-child(even) {
+    background-color: var(--gs-table-row-alt-bg) !important;
+}
+
+section[data-page="general-settings"] table tbody tr:hover {
+    background-color: var(--gs-table-row-hover-bg) !important;
+}
+
+/* (Removed) LIGHT-specific overrides that forced Settings table/tabs to a light palette.
+   Settings now follows the Projects-style dark table chrome in all themes. */
+
+/* Override Tailwind divide color used on tbody. */
+section[data-page="general-settings"] tbody.divide-y > :not([hidden]) ~ :not([hidden]) {
+    border-top-color: var(--gs-table-divider) !important;
+}
+
+/* Make the surrounding cards match the UI theme as well (prevents bright borders). */
+section[data-page="general-settings"] .bg-slate-700\/80 {
+    background-color: var(--ui-card, rgba(51,65,85,0.8)) !important;
+}
+
+/* These utility classes are heavily used in the Settings tables (header rows, tabs, inputs). */
+section[data-page="general-settings"] .bg-slate-800\/80 {
+    background-color: var(--gs-table-head-bg) !important;
+}
+
+section[data-page="general-settings"] .bg-slate-800\/40 {
+    background-color: var(--gs-input-bg) !important;
+}
+
+section[data-page="general-settings"] .bg-slate-800\/50 {
+    background-color: var(--gs-surface-2) !important;
+}
+
+section[data-page="general-settings"] .bg-slate-800\/60 {
+    background-color: var(--gs-surface-2) !important;
+}
+
+section[data-page="general-settings"] .bg-slate-800\/40:focus,
+section[data-page="general-settings"] .bg-slate-800\/40:focus-visible {
+    background-color: var(--gs-input-bg) !important;
+}
+
+section[data-page="general-settings"] .border-slate-600\/50 {
+    border-color: var(--gs-table-divider) !important;
+}
+
+section[data-page="general-settings"] .border-slate-500\/60 {
+    border-color: var(--gs-table-divider) !important;
+}
+
+/* Theme icons inside #theme-toggle */
+#theme-toggle [data-theme-icon] {
+    display: none;
+}
+html[data-theme="light"] #theme-toggle [data-theme-icon="light"] { display: block; }
+html[data-theme="gray"]  #theme-toggle [data-theme-icon="gray"] { display: block; }
+html[data-theme="black"] #theme-toggle [data-theme-icon="black"] { display: block; }
+
+/* Topbar + Sidebar use the same Tailwind classes (bg-slate-700, borders, etc).
+   Theme-specific palette mapping is handled below via the utility overrides. */
+
+/* Common Tailwind utility overrides for LIGHT — AWS-inspired clean surfaces */
+html[data-theme="light"] .bg-slate-900 { background-color: #ffffff !important; }
+html[data-theme="light"] .bg-slate-900\/60 { background-color: rgba(255,255,255,.85) !important; }
+html[data-theme="light"] .bg-slate-800 { background-color: #ffffff !important; }
+html[data-theme="light"] .bg-slate-800\/80 { background-color: rgba(255,255,255,.95) !important; }
+html[data-theme="light"] .bg-slate-800\/60 { background-color: rgba(255,255,255,.90) !important; }
+html[data-theme="light"] .bg-slate-800\/40 { background-color: rgba(255,255,255,.85) !important; }
+html[data-theme="light"] .bg-slate-700 { background-color: #fafafa !important; }
+html[data-theme="light"] .bg-slate-700\/80 { background-color: rgba(250,250,250,.92) !important; }
+html[data-theme="light"] .bg-slate-700\/70 { background-color: rgba(250,250,250,.88) !important; }
+html[data-theme="light"] .bg-slate-700\/60 { background-color: rgba(250,250,250,.84) !important; }
+html[data-theme="light"] .bg-slate-700\/50 { background-color: rgba(250,250,250,.78) !important; }
+html[data-theme="light"] .bg-slate-600 { background-color: #e9ebed !important; }
+html[data-theme="light"] .hover\:bg-slate-600:hover { background-color: #e9ebed !important; }
+
+/* ===== LIGHT theme: AWS-inspired chrome =====
+   Topbar: hidden in iframe mode. Sidebar: clean white with dark text. */
+
+html[data-theme="light"] header[data-topbar] {
+    background-color: #232f3e !important;
+    background-image: none !important;
+    border-bottom-color: #1a242f !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+
+html[data-theme="light"] aside[data-sidebar="main"] {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    border-right-color: #d5dbdb !important;
+    box-shadow: 1px 0 3px rgba(0,0,0,.08);
+    color: #16191f !important;
+}
+
+/* Sidebar text: dark on white */
+html[data-theme="light"] aside[data-sidebar="main"] .text-white,
+html[data-theme="light"] aside[data-sidebar="main"] .text-slate-100,
+html[data-theme="light"] aside[data-sidebar="main"] .text-slate-200,
+html[data-theme="light"] aside[data-sidebar="main"] .text-slate-200\/90,
+html[data-theme="light"] aside[data-sidebar="main"] .text-slate-300,
+html[data-theme="light"] aside[data-sidebar="main"] .text-slate-400 {
+    color: #16191f !important;
+}
+
+/* Sidebar borders */
+html[data-theme="light"] aside[data-sidebar="main"] .border-slate-600\/40,
+html[data-theme="light"] aside[data-sidebar="main"] .border-slate-600\/50,
+html[data-theme="light"] aside[data-sidebar="main"] .border-slate-500\/60 {
+    border-color: #eaeded !important;
+}
+
+/* Sidebar hover */
+html[data-theme="light"] aside[data-sidebar="main"] a:hover,
+html[data-theme="light"] aside[data-sidebar="main"] button:hover,
+html[data-theme="light"] aside[data-sidebar="main"] summary:hover {
+    background-color: #f2f3f3 !important;
+}
+
+/* Sidebar active item — blue text like AWS */
+html[data-theme="light"] aside[data-sidebar="main"] .bg-slate-600 {
+    background-color: #f2f3f3 !important;
+    border-color: #d5dbdb !important;
+    color: #0073bb !important;
+}
+
+html[data-theme="light"] aside[data-sidebar="main"] .bg-slate-600 .sb-text,
+html[data-theme="light"] aside[data-sidebar="main"] .bg-slate-600 i {
+    color: #0073bb !important;
+}
+
+/* Sidebar open groups */
+html[data-theme="light"] aside[data-sidebar="main"] details[open] > summary {
+    background-color: #f2f3f3 !important;
+}
+
+html[data-theme="light"] aside[data-sidebar="main"] details[open] > summary i {
+    color: #0073bb !important;
+}
+
+/* Sidebar collapsed icon color */
+html[data-theme="light"] body.sidebar-collapsed aside[data-sidebar="main"] nav summary i {
+    color: #545b64 !important;
+}
+
+/* Sidebar submenu background — override color-mix that uses currentColor */
+html[data-theme="light"] aside[data-sidebar="main"] .submenu {
+    background: #f7f8f8 !important;
+    border-color: #eaeded !important;
+    border-left-color: #d5dbdb !important;
+}
+
+/* Active item ring override */
+html[data-theme="light"] aside[data-sidebar="main"] .ring-slate-500\/50 {
+    --tw-ring-color: #d5dbdb !important;
+}
+
+/* Topbar stays dark — keep text white */
+html[data-theme="light"] header[data-topbar] .text-white,
+html[data-theme="light"] header[data-topbar] .text-slate-100,
+html[data-theme="light"] header[data-topbar] .text-slate-200,
+html[data-theme="light"] header[data-topbar] .text-slate-200\/90,
+html[data-theme="light"] header[data-topbar] .text-slate-300 {
+    color: #f1f5f9 !important;
+}
+
+html[data-theme="light"] header[data-topbar] .border-slate-600\/40,
+html[data-theme="light"] header[data-topbar] .border-slate-600\/50,
+html[data-theme="light"] header[data-topbar] .border-slate-500\/60 {
+    border-color: rgba(148,163,184,.35) !important;
+}
+
+html[data-theme="light"] header[data-topbar] .hover\:bg-slate-600:hover {
+    background-color: rgba(255,255,255,.12) !important;
+}
+
+/* Page header bar */
+html[data-theme="light"] [data-page-header].bg-slate-700\/80 {
+    background-color: #232f3e !important;
+}
+
+/* Page header text should always be white (all themes) */
+[data-page-header] {
+    color: #f1f5f9 !important;
+}
+
+[data-page-header] .text-slate-100,
+[data-page-header] .text-slate-200,
+[data-page-header] .text-slate-200\/90,
+[data-page-header] .text-slate-300,
+[data-page-header] .text-slate-400,
+[data-page-header] .text-slate-500 {
+    color: #f1f5f9 !important;
+}
+
+html[data-theme="light"] [data-page-header].border-slate-600\/50 {
+    border-color: rgba(71,85,105,.50) !important;
+}
+
+/* Content area text colors */
+html[data-theme="light"] .text-slate-100 { color: #16191f !important; }
+html[data-theme="light"] .text-slate-200 { color: #16191f !important; }
+html[data-theme="light"] .text-slate-300 { color: #37475a !important; }
+html[data-theme="light"] .text-slate-400 { color: #545b64 !important; }
+html[data-theme="light"] .text-slate-500 { color: #687078 !important; }
+
+/* In LIGHT theme, most form controls should use a light surface + dark text.
+   Many pages use dark-slate utility backgrounds even in LIGHT, which makes
+   black placeholders/text hard to read unless we normalize these classes. */
+html[data-theme="light"] input.bg-slate-800\/40,
+html[data-theme="light"] textarea.bg-slate-800\/40,
+html[data-theme="light"] select.bg-slate-800\/40,
+html[data-theme="light"] input.bg-slate-700\/60,
+html[data-theme="light"] textarea.bg-slate-700\/60,
+html[data-theme="light"] select.bg-slate-700\/60,
+html[data-theme="light"] input.bg-slate-800\/60,
+html[data-theme="light"] textarea.bg-slate-800\/60,
+html[data-theme="light"] select.bg-slate-800\/60 {
+    background-color: #ffffff !important;
+    color: #16191f !important;
+    border-color: #aab7b8 !important;
+}
+
+html[data-theme="light"] input.bg-slate-800\/40::placeholder,
+html[data-theme="light"] textarea.bg-slate-800\/40::placeholder,
+html[data-theme="light"] input.bg-slate-700\/60::placeholder,
+html[data-theme="light"] textarea.bg-slate-700\/60::placeholder,
+html[data-theme="light"] input.bg-slate-800\/60::placeholder,
+html[data-theme="light"] textarea.bg-slate-800\/60::placeholder {
+    color: #687078 !important;
+    opacity: 1 !important;
+}
+
+/* Placeholders should be black in LIGHT theme */
+html[data-theme="light"] input::placeholder,
+html[data-theme="light"] textarea::placeholder,
+html[data-theme="light"] .form-input::placeholder,
+html[data-theme="light"] .form-textarea::placeholder,
+html[data-theme="light"] input::-webkit-input-placeholder,
+html[data-theme="light"] textarea::-webkit-input-placeholder,
+html[data-theme="light"] .form-input::-webkit-input-placeholder,
+html[data-theme="light"] .form-textarea::-webkit-input-placeholder,
+html[data-theme="light"] input::-moz-placeholder,
+html[data-theme="light"] textarea::-moz-placeholder,
+html[data-theme="light"] .form-input::-moz-placeholder,
+html[data-theme="light"] .form-textarea::-moz-placeholder,
+html[data-theme="light"] input:-ms-input-placeholder,
+html[data-theme="light"] textarea:-ms-input-placeholder,
+html[data-theme="light"] .form-input:-ms-input-placeholder,
+html[data-theme="light"] .form-textarea:-ms-input-placeholder {
+    color: #687078 !important;
+    opacity: 1 !important;
+}
+
+html[data-theme="light"] .placeholder-slate-300\/70::placeholder,
+html[data-theme="light"] .placeholder-slate-400::placeholder,
+html[data-theme="light"] .placeholder-slate-500::placeholder,
+html[data-theme="light"] .placeholder-slate-300\/70::-webkit-input-placeholder,
+html[data-theme="light"] .placeholder-slate-400::-webkit-input-placeholder,
+html[data-theme="light"] .placeholder-slate-500::-webkit-input-placeholder,
+html[data-theme="light"] .placeholder-slate-300\/70::-moz-placeholder,
+html[data-theme="light"] .placeholder-slate-400::-moz-placeholder,
+html[data-theme="light"] .placeholder-slate-500::-moz-placeholder,
+html[data-theme="light"] .placeholder-slate-300\/70:-ms-input-placeholder,
+html[data-theme="light"] .placeholder-slate-400:-ms-input-placeholder,
+html[data-theme="light"] .placeholder-slate-500:-ms-input-placeholder {
+    color: #687078 !important;
+    opacity: 1 !important;
+}
+
+/* Select text in LIGHT theme */
+html[data-theme="light"] select,
+html[data-theme="light"] .form-select {
+    color: #16191f !important;
+}
+
+html[data-theme="light"] select option,
+html[data-theme="light"] .form-select option {
+    color: #16191f !important;
+}
+
+/* Some components intentionally use dark-slate surfaces even in LIGHT mode (table headers, action cards).
+   Keep those surfaces dark and enforce readable white text/icons. */
+html[data-theme="light"] .bg-slate-700\/80.text-slate-100,
+html[data-theme="light"] .bg-slate-800\/80.text-slate-100 {
+    color: #f1f5f9 !important;
+}
+
+html[data-theme="light"] .bg-slate-700\/80.text-slate-100 {
+    background-color: rgba(51,65,85,.80) !important; /* slate-700/80 */
+}
+
+html[data-theme="light"] .bg-slate-800\/80.text-slate-100 {
+    background-color: rgba(30,41,59,.88) !important; /* slate-800/80-ish */
+}
+
+html[data-theme="light"] .bg-slate-700\/80.text-slate-100 *,
+html[data-theme="light"] .bg-slate-800\/80.text-slate-100 * {
+    color: #f1f5f9 !important;
+}
+
+/* In LIGHT theme, forms inside these dark cards should look like LIGHT forms
+   (light background + dark text), otherwise the blanket `* { color: ... }` above
+   makes selects/inputs unreadable. */
+html[data-theme="light"] .bg-slate-700\/80.text-slate-100 input,
+html[data-theme="light"] .bg-slate-700\/80.text-slate-100 textarea,
+html[data-theme="light"] .bg-slate-700\/80.text-slate-100 select,
+html[data-theme="light"] .bg-slate-800\/80.text-slate-100 input,
+html[data-theme="light"] .bg-slate-800\/80.text-slate-100 textarea,
+html[data-theme="light"] .bg-slate-800\/80.text-slate-100 select {
+    background-color: #ffffff !important;
+    color: #16191f !important;
+    border-color: #aab7b8 !important;
+}
+
+html[data-theme="light"] .bg-slate-700\/80.text-slate-100 input::placeholder,
+html[data-theme="light"] .bg-slate-700\/80.text-slate-100 textarea::placeholder,
+html[data-theme="light"] .bg-slate-800\/80.text-slate-100 input::placeholder,
+html[data-theme="light"] .bg-slate-800\/80.text-slate-100 textarea::placeholder {
+    color: #687078 !important;
+    opacity: 1 !important;
+}
+
+html[data-theme="light"] .bg-slate-700\/80.text-slate-100 select option,
+html[data-theme="light"] .bg-slate-800\/80.text-slate-100 select option {
+    color: #16191f !important;
+}
+
+html[data-theme="light"] .bg-slate-700\/80.text-slate-100 svg,
+html[data-theme="light"] .bg-slate-800\/80.text-slate-100 svg {
+    fill: currentColor !important;
+    stroke: currentColor !important;
+}
+
+/* Tabs (Active / All / Archived) inside header cards:
+   the tab strip uses bg-slate-800/60 which becomes light in LIGHT mode, so the text must be dark. */
+html[data-theme="light"] .bg-slate-700\/80.text-slate-100 .inline-flex.rounded-full.bg-slate-800\/60 a,
+html[data-theme="light"] .bg-slate-700\/80.text-slate-100 .inline-flex.rounded-full.bg-slate-800\/60 a * {
+    color: #0f172a !important;
+}
+
+/* Syslog filters: the Level/Source "select-like" buttons must remain readable in LIGHT.
+   They live inside a dark-card container that forces descendants to white. */
+html[data-theme="light"] #levelsButton,
+html[data-theme="light"] #sourcesButton {
+    background-color: rgba(241,245,249,.92) !important; /* slate-100-ish */
+    color: #0f172a !important;
+    border-color: rgba(100,116,139,.65) !important;
+}
+
+html[data-theme="light"] #levelsButton *,
+html[data-theme="light"] #sourcesButton * {
+    color: #0f172a !important;
+}
+
+/* Syslog Level/Source dropdown menus are intentionally dark even in LIGHT.
+   Our global `text-slate-*` remaps would otherwise turn their text dark. */
+html[data-theme="light"] #levelsMenu,
+html[data-theme="light"] #sourcesMenu {
+    color: #f1f5f9 !important;
+}
+
+html[data-theme="light"] #levelsMenu .text-slate-100,
+html[data-theme="light"] #levelsMenu .text-slate-200,
+html[data-theme="light"] #levelsMenu .text-slate-300,
+html[data-theme="light"] #levelsMenu .text-slate-400,
+html[data-theme="light"] #levelsMenu .text-slate-500,
+html[data-theme="light"] #sourcesMenu .text-slate-100,
+html[data-theme="light"] #sourcesMenu .text-slate-200,
+html[data-theme="light"] #sourcesMenu .text-slate-300,
+html[data-theme="light"] #sourcesMenu .text-slate-400,
+html[data-theme="light"] #sourcesMenu .text-slate-500 {
+    color: #f1f5f9 !important;
+}
+
+html[data-theme="light"] #levelsMenu label,
+html[data-theme="light"] #levelsMenu button,
+html[data-theme="light"] #sourcesMenu label,
+html[data-theme="light"] #sourcesMenu button {
+    color: #f1f5f9 !important;
+}
+
+/* Page header title (text + icon) should always be white, across all themes.
+   Needs to come AFTER the LIGHT text-slate-* remaps to win specificity/order. */
+html[data-theme] [data-page-header] [data-page-header-title],
+html[data-theme] [data-page-header] [data-page-header-title] * {
+    color: #f1f5f9 !important;
+}
+
+html[data-theme] [data-page-header] [data-page-header-title] svg {
+    fill: currentColor !important;
+    stroke: currentColor !important;
+}
+
+html[data-theme="light"] .border-slate-600 { border-color: rgba(148,163,184,.75) !important; }
+html[data-theme="light"] .border-slate-600\/50 { border-color: rgba(148,163,184,.55) !important; }
+html[data-theme="light"] .border-slate-500\/60 { border-color: rgba(148,163,184,.65) !important; }
+html[data-theme="light"] .border-slate-600\/40 { border-color: rgba(148,163,184,.45) !important; }
+
+/* Deeper blacks for BLACK theme (keeps the gray look but darker) */
+html[data-theme="black"] .bg-slate-900 { background-color: #000 !important; }
+html[data-theme="black"] .bg-slate-800 { background-color: rgba(17,17,17,1) !important; }
+html[data-theme="black"] .bg-slate-700 { background-color: rgba(28,28,28,1) !important; }
+html[data-theme="black"] .bg-slate-700\/80 { background-color: rgba(28,28,28,.86) !important; }
+html[data-theme="black"] .bg-slate-800\/40 { background-color: rgba(17,17,17,.70) !important; }
+html[data-theme="black"] .bg-slate-800\/80 { background-color: rgba(17,17,17,.85) !important; }
+html[data-theme="black"] .bg-slate-800\/60 { background-color: rgba(17,17,17,.78) !important; }
+html[data-theme="black"] .bg-slate-700\/70 { background-color: rgba(28,28,28,.82) !important; }
+html[data-theme="black"] .bg-slate-700\/60 { background-color: rgba(28,28,28,.78) !important; }
+html[data-theme="black"] .bg-slate-700\/50 { background-color: rgba(28,28,28,.72) !important; }
+html[data-theme="black"] .bg-slate-600 { background-color: rgba(38,38,38,1) !important; }
+html[data-theme="black"] .hover\:bg-slate-600:hover { background-color: rgba(38,38,38,1) !important; }
+
+/* BLACK theme: sidebar + topbar gradients → near-black instead of slate-blue */
+html[data-theme="black"] .app-sidebar {
+    background-image: linear-gradient(180deg, rgba(20,20,20,.95), rgba(8,8,8,.95)) !important;
+    border-right-color: rgba(148,163,184,.15) !important;
+}
+
+html[data-theme="black"] .app-topbar {
+    background-image: linear-gradient(120deg, rgba(8,8,8,.95), rgba(18,18,18,.65)) !important;
+    border-bottom-color: rgba(148,163,184,.15) !important;
+}
+
+html[data-theme="black"] .app-sidebar-nav a:hover {
+    background-color: rgba(59, 130, 246, 0.10) !important;
+    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.22) !important;
+}
+
+/* BLACK sidebar flyout */
+html[data-theme="black"] aside[data-sidebar="main"] .docker-flyout {
+    background: #1c1c1c;
+    border-color: rgba(148,163,184,.18);
+}
+
+/* BLACK: sidebar active ring */
+html[data-theme="black"] aside[data-sidebar="main"] .ring-slate-500\/50 {
+    --tw-ring-color: rgba(148,163,184,.22) !important;
+}
+
+/* BLACK: sidebar submenu */
+html[data-theme="black"] aside[data-sidebar="main"] .submenu {
+    background: rgba(14,14,14,.80) !important;
+    border-color: rgba(148,163,184,.12) !important;
+}
+
+/* BLACK: borders — slightly more muted than gray */
+html[data-theme="black"] .border-slate-600 { border-color: rgba(148,163,184,.20) !important; }
+html[data-theme="black"] .border-slate-600\/50 { border-color: rgba(148,163,184,.15) !important; }
+html[data-theme="black"] .border-slate-600\/40 { border-color: rgba(148,163,184,.12) !important; }
+html[data-theme="black"] .border-slate-500\/60 { border-color: rgba(148,163,184,.18) !important; }
+
+/* BLACK: text slightly brighter for contrast */
+html[data-theme="black"] .text-slate-300 { color: #d1d5db !important; }
+html[data-theme="black"] .text-slate-400 { color: #9ca3af !important; }
+html[data-theme="black"] .text-slate-500 { color: #6b7280 !important; }
+
+/* BLACK: page loader overlay */
+html[data-theme="black"] .page-loader {
+    background: rgba(0,0,0,.88);
+}
+
+/* LIGHT: page loader overlay — light background instead of dark */
+html[data-theme="light"] .page-loader {
+    background: rgba(240,242,245,.88);
+}
+html[data-theme="light"] .loader-shimmer {
+    background: rgba(148,163,184,.30);
+}
+html[data-theme="light"] .loader-shimmer > span {
+    color: #0073bb;
+}
+
+/* Brand primary buttons (e.g. AddSystem, Apply filters).
+   Customize via CSS variables if needed:
+   --ui-brand (already used by Tailwind 'brand')
+   --ui-brand-hover (optional; fallback matches Tailwind blue-600) */
+.btn-brand,
+.btn-addsystem {
+    background-color: var(--ui-brand, #3B82F6);
+}
+
+.btn-brand:hover,
+.btn-addsystem:hover {
+    background-color: var(--ui-brand-hover, #2563EB);
+}
+
+.btn-brand:focus-visible,
+.btn-addsystem:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-brand, #3B82F6) 35%, transparent);
+}
+
+/* ===== Modern UI refresh ===== */
+:root {
+    --ui-font-display: "Space Grotesk", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --ui-font-body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --ui-brand: #3b82f6;
+    --ui-brand-strong: #1d4ed8;
+    --ui-brand-soft: rgba(59, 130, 246, 0.18);
+    --ui-surface: rgba(30, 41, 59, 0.72);
+    --ui-surface-strong: rgba(15, 23, 42, 0.85);
+    --ui-border: rgba(148, 163, 184, 0.28);
+    --ui-shadow: 0 16px 40px -26px rgba(15, 23, 42, 0.65);
+    --ui-glow: 0 0 0 1px rgba(148, 163, 184, 0.12), 0 12px 32px -20px rgba(59, 130, 246, 0.55);
+    --status-todo: #60a5fa;
+    --status-in-progress: #a855f7;
+    --status-in-review: #22c55e;
+    --status-done: #f59e0b;
+    --status-fallback-1: #3b82f6;
+    --status-fallback-2: #94a3b8;
+    --status-fallback-3: #ef4444;
+    --status-fallback-4: #14b8a6;
+    --app-bg-layer:
+        radial-gradient(1400px 600px at 12% -10%, rgba(56, 189, 248, 0.18), transparent 60%),
+        radial-gradient(900px 500px at 90% 0%, rgba(99, 102, 241, 0.16), transparent 55%),
+        radial-gradient(800px 600px at 15% 100%, rgba(14, 116, 144, 0.20), transparent 55%);
+}
+
+html[data-theme="light"] {
+    --ui-surface: rgba(248, 250, 252, 0.92);
+    --ui-surface-strong: rgba(255, 255, 255, 0.98);
+    --ui-border: rgba(148, 163, 184, 0.35);
+    --ui-shadow: 0 16px 40px -28px rgba(15, 23, 42, 0.35);
+    --ui-glow: 0 0 0 1px rgba(148, 163, 184, 0.25), 0 16px 32px -22px rgba(59, 130, 246, 0.4);
+    --status-todo: #3b82f6;
+    --status-in-progress: #7c3aed;
+    --status-in-review: #16a34a;
+    --status-done: #f59e0b;
+    --status-fallback-1: #2563eb;
+    --status-fallback-2: #64748b;
+    --status-fallback-3: #ef4444;
+    --status-fallback-4: #0d9488;
+    --app-bg-layer:
+        radial-gradient(1200px 600px at 15% -10%, rgba(59, 130, 246, 0.12), transparent 60%),
+        radial-gradient(900px 600px at 85% 0%, rgba(16, 185, 129, 0.12), transparent 55%),
+        radial-gradient(700px 500px at 20% 100%, rgba(14, 116, 144, 0.12), transparent 55%);
+}
+
+html[data-theme="black"] {
+    --ui-surface: rgba(16, 16, 16, 0.86);
+    --ui-surface-strong: rgba(8, 8, 8, 0.94);
+    --ui-border: rgba(148, 163, 184, 0.2);
+    --ui-shadow: 0 18px 40px -26px rgba(0, 0, 0, 0.85);
+}
+
+.app-body {
+    font-family: var(--ui-font-body);
+    background-color: #0f172a;
+}
+
+.app-body h1,
+.app-body h2,
+.app-body h3,
+.app-body .app-title {
+    font-family: var(--ui-font-display);
+    letter-spacing: -0.02em;
+}
+
+/* In embed / iframe mode: use the parent site's system font stack */
+html.work-embedded .app-body,
+html.work-embedded .app-body h1,
+html.work-embedded .app-body h2,
+html.work-embedded .app-body h3,
+html.work-embedded .app-body .app-title {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", "Helvetica Neue", sans-serif;
+    letter-spacing: normal;
+}
+
+/* In embed mode: remove the sidebar gradient so it matches the parent's flat bg-slate-700 sidebar */
+html.work-embedded .app-sidebar {
+    background-image: none !important;
+}
+
+/* In embed mode: remove the topbar gradient as well */
+html.work-embedded .app-topbar {
+    background-image: none !important;
+}
+
+/* In embed mode: toned-down sidebar nav hover (no blue glow, just subtle bg) */
+html.work-embedded .app-sidebar-nav a:hover {
+    transform: none;
+    box-shadow: none;
+    background-color: rgba(148,163,184,.12);
+}
+
+.app-shell {
+    background-image: var(--app-bg-layer);
+}
+
+.app-topbar {
+    background-image: linear-gradient(120deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.65));
+    border-bottom: 1px solid var(--ui-border);
+    box-shadow: var(--ui-shadow);
+}
+
+.app-icon-button {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.app-icon-button:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--ui-glow);
+}
+
+.app-primary {
+    background-image: linear-gradient(120deg, #3b82f6 0%, #2563eb 60%, #1d4ed8 100%);
+    box-shadow: 0 16px 28px -20px rgba(37, 99, 235, 0.75);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.app-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 32px -20px rgba(37, 99, 235, 0.9);
+}
+
+.app-chip {
+    backdrop-filter: blur(12px);
+}
+
+.app-input {
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.1);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.app-input:focus {
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35), 0 12px 26px -20px rgba(59, 130, 246, 0.55);
+}
+
+.app-sidebar {
+    background-image: linear-gradient(180deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+    border-right: 1px solid var(--ui-border);
+    box-shadow: var(--ui-shadow);
+}
+
+.app-sidebar-nav a {
+    transition: background-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.app-sidebar-nav a:hover {
+    transform: translateX(2px);
+    background-color: rgba(59, 130, 246, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.35);
+}
+
+.app-sidebar-nav .sidebar-group + .sidebar-group {
+    border-top: 1px solid rgba(148, 163, 184, 0.12);
+    padding-top: 0.5rem;
+}
+
+.app-content {
+    animation: app-fade-up 0.5s ease both;
+}
+
+@keyframes app-fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-content {
+        animation: none;
+    }
+}
+
+/* ── RTL layout overrides ──────────────────────────────────── */
+html[dir="rtl"] .app-main {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+@media (min-width: 768px) {
+    html[dir="rtl"] .app-main {
+        padding-right: 0.75rem;
+    }
+}
+html[dir="rtl"] .app-main.md\:ml-2 {
+    margin-left: 0;
+    margin-right: 0.5rem;
+}
+html[dir="rtl"] body.sidebar-collapsed #content {
+    margin-inline-start: 0 !important;
+    padding-inline-start: 0 !important;
+}
+
+/* ── Extra responsive grid utilities (not in compiled Tailwind) ── */
+@media (min-width: 768px) {
+    .md\:grid-cols-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .md\:col-span-3 {
+        grid-column: span 3 / span 3;
+    }
+    .md\:grid-cols-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .md\:col-span-4 {
+        grid-column: span 4 / span 4;
+    }
+}
+@media (min-width: 1024px) {
+    .lg\:grid-cols-6 {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+    .lg\:col-span-6 {
+        grid-column: span 6 / span 6;
+    }
+}

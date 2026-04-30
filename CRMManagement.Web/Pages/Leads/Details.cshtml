@@ -1,0 +1,46 @@
+@page "{id:guid}"
+@model CRMManagement.Web.Pages.Leads.DetailsModel
+@{
+    ViewData["Title"] = "Lead Details";
+}
+
+@if (Model.Item is null)
+{
+    <div class="p-4 text-slate-300">Not found.</div>
+}
+else
+{
+    var l = Model.Item;
+    <section class="p-4 space-y-4">
+        <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-semibold text-slate-100">@l.FirstName @l.LastName</h1>
+            <div class="flex gap-2">
+                <a asp-page="/Leads/Upsert" asp-route-id="@l.Id" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm">Edit</a>
+                @if (l.ConvertedAt is null)
+                {
+                    <form method="post" asp-page-handler="Convert" asp-route-id="@l.Id">
+                        <button class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm">Convert</button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-200 text-sm">
+            <div><span class="text-slate-400">Company:</span> @l.Company</div>
+            <div><span class="text-slate-400">Title:</span> @l.Title</div>
+            <div><span class="text-slate-400">Email:</span> @l.Email</div>
+            <div><span class="text-slate-400">Phone:</span> @l.Phone</div>
+            <div><span class="text-slate-400">Source:</span> @l.Source</div>
+            <div><span class="text-slate-400">Status:</span> @l.Status</div>
+            <div><span class="text-slate-400">Rating:</span> @l.Rating</div>
+            <div><span class="text-slate-400">Score:</span> @l.Score</div>
+            <div><span class="text-slate-400">Industry:</span> @l.Industry</div>
+            <div><span class="text-slate-400">Website:</span> @l.Website</div>
+            <div class="md:col-span-2"><span class="text-slate-400">Description:</span> @l.Description</div>
+            @if (l.ConvertedAt is not null)
+            {
+                <div class="md:col-span-2 text-emerald-400">Converted @l.ConvertedAt?.ToString("yyyy-MM-dd") to Account @l.ConvertedAccountId / Contact @l.ConvertedContactId / Opportunity @l.ConvertedOpportunityId</div>
+            }
+        </div>
+    </section>
+}

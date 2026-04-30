@@ -1,0 +1,2573 @@
+﻿@page "/UiCustomization/Editor"
+@using System.Text.Json
+@model CRMManagement.Web.Pages.UiCustomization.EditorModel
+
+@{
+    // English comments only inside code.
+    ViewData["Title"] = "UI Editor";
+    Layout = "_Layout";
+
+    var returnPath = string.IsNullOrWhiteSpace(Model.ReturnPath) ? "/" : Model.ReturnPath;
+    if (!returnPath.StartsWith("/")) returnPath = "/" + returnPath;
+    if (returnPath.StartsWith("/UiCustomization/Editor", StringComparison.OrdinalIgnoreCase)) returnPath = "/";
+
+    var targetUrl = returnPath + (returnPath.Contains("?") ? "&" : "?") + "__uiedit=1";
+
+    var pageKeyJs = JsonSerializer.Serialize(Model.PageKey ?? "");
+    var featureKeyJs = JsonSerializer.Serialize(Model.FeatureKey ?? "");
+    var returnPathJs = JsonSerializer.Serialize(returnPath);
+}
+
+<!-- Page Header -->
+<div class="rounded-2xl border border-slate-600/50 bg-slate-700/80 text-slate-100 shadow-[0_6px_24px_-10px_rgba(2,6,23,.25)] mb-4">
+    <div class="flex items-center px-4 py-2 min-h-[2.5rem]">
+        <div class="flex-1 text-center">
+            <h2 class="m-0 text-2xl font-semibold truncate">
+                <span class="inline-flex items-center gap-2 leading-none">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>UI Editor</span>
+                </span>
+            </h2>
+        </div>
+    </div>
+</div>
+
+<!-- English comments only inside code. -->
+@Html.AntiForgeryToken()
+
+<style>
+    /* Page-scoped styling to match the Create/Edit User vibe */
+    .ui-editor-page input[type="text"],
+    .ui-editor-page input[type="number"],
+    .ui-editor-page textarea {
+        background: rgba(30, 41, 59, .40) !important; /* slate-800/40 like the site */
+        color: #f1f5f9 !important;
+        border: 1px solid rgba(100, 116, 139, .50) !important;
+    }
+
+    .ui-editor-page input[type="text"]::placeholder,
+    .ui-editor-page textarea::placeholder {
+        color: rgba(148, 163, 184, .85) !important;
+    }
+
+    .ui-editor-page input[type="text"]:focus,
+    .ui-editor-page input[type="number"]:focus,
+    .ui-editor-page textarea:focus {
+        outline: none !important;
+        border-color: var(--tw-ring-color) !important;
+        box-shadow: 0 0 0 1px var(--tw-ring-color) !important;
+    }
+
+    .ui-editor-page input[type="color"] {
+        background: rgba(30, 41, 59, .40) !important;
+        border: 1px solid rgba(100, 116, 139, .50) !important;
+        padding: 4px !important;
+        height: 42px;
+    }
+
+    .ui-mode-btn {
+        border: 1px solid rgba(100, 116, 139, .55);
+        background: rgba(15, 23, 42, .35);
+        color: #e2e8f0;
+    }
+
+    .ui-mode-btn:hover {
+        background: rgba(51, 65, 85, .55);
+    }
+
+    .ui-mode-btn.is-active {
+        border-color: rgba(56, 189, 248, .65);
+        background: rgba(2, 132, 199, .35);
+        color: #ffffff;
+    }
+</style>
+
+<section class="ui-editor-page flex justify-center">
+    <div class="w-full max-w-5xl rounded-2xl border border-slate-600/50 bg-slate-700/80 p-6 sm:p-8 shadow-soft text-slate-100">
+
+        <!-- Top line (lighter: keep navigation, move editing actions into the wizard) -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
+            <div class="text-sm text-slate-300">
+                <div class="text-xs text-slate-300">
+                    PageKey: <span class="text-slate-100 font-medium">@Model.PageKey</span>
+                    <span class="mx-2 text-slate-500">•</span>
+                    FeatureKey: <span class="text-slate-100 font-medium">@Model.FeatureKey</span>
+                </div>
+                <div class="text-xs text-slate-400 mt-1">
+                    Tip: click an element in the preview to select it.
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <a href="@returnPath"
+                   class="inline-flex items-center gap-2 rounded-full border border-slate-500/60 px-4 py-2 text-slate-100 hover:bg-slate-600 transition">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                    <span>Back</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Main area: Preview + Inspector inside same card -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Preview -->
+            <div class="lg:col-span-2">
+                <div class="rounded-2xl border border-slate-600/50 bg-slate-800/40 overflow-hidden">
+                    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-600/50">
+                        <div class="text-sm font-semibold text-slate-100">
+                            <i class="fa-regular fa-eye mr-2"></i>Preview
+                        </div>
+                        <div id="status" class="text-xs text-slate-300"></div>
+                    </div>
+
+                    <iframe id="uiFrame"
+                            src="@targetUrl"
+                            class="w-full"
+                            style="height: 62vh; min-height: 520px; border: 0; background: transparent;"
+                            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals">
+                    </iframe>
+                </div>
+            </div>
+
+            <!-- Inspector (site form style) -->
+            <div class="lg:col-span-1">
+                <div class="rounded-2xl border border-slate-600/50 bg-slate-800/40 p-4">
+                    <div class="text-sm text-slate-100 font-semibold mb-3">
+                        <i class="fa-solid fa-bullseye mr-2"></i>Inspector
+                    </div>
+
+                    <!-- Wizard steps: Select → Edit → Save -->
+                    <div class="flex items-center justify-between gap-2 mb-4">
+                        <div class="flex items-center gap-2" role="group" aria-label="Editor step">
+                            <button id="btnStepSelect" type="button"
+                                    class="ui-mode-btn rounded-full px-3 py-1 text-xs is-active"
+                                    data-uiedit-step-btn="select">
+                                1) Select
+                            </button>
+                            <button id="btnStepEdit" type="button"
+                                    class="ui-mode-btn rounded-full px-3 py-1 text-xs"
+                                    data-uiedit-step-btn="edit">
+                                2) Edit
+                            </button>
+                            <button id="btnStepSave" type="button"
+                                    class="ui-mode-btn rounded-full px-3 py-1 text-xs"
+                                    data-uiedit-step-btn="save">
+                                3) Save
+                            </button>
+                        </div>
+
+                        <div class="flex items-center gap-2" role="group" aria-label="Quick actions">
+                            <button id="btnQuickAdd" type="button"
+                                    class="inline-flex items-center gap-2 rounded-full bg-brand px-3 py-1.5 text-xs text-white hover:bg-brand-600 transition">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Add</span>
+                            </button>
+                            <button id="btnQuickRemove" type="button" disabled
+                                    class="inline-flex items-center gap-2 rounded-full bg-red-600 px-3 py-1.5 text-xs text-white hover:bg-red-700 transition disabled:opacity-40 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-trash"></i>
+                                <span>Remove</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 1: Select -->
+                    <div data-uiedit-step="select" class="space-y-4">
+                        <div class="space-y-4">
+                            <div class="space-y-1">
+                                <label class="block text-xs font-medium text-slate-300">Selector</label>
+                                <div class="flex items-stretch gap-2">
+                                    <input id="selSelector"
+                                           class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm"
+                                           readonly />
+                                    <button id="btnCopySelector" type="button"
+                                            class="inline-flex items-center gap-2 rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-xs hover:bg-slate-600/40 transition"
+                                            title="Copy selector to clipboard">
+                                        <i class="fa-regular fa-copy"></i>
+                                        <span>Copy</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="block text-xs font-medium text-slate-300">Find (CSS selector)</label>
+                                <div class="flex items-stretch gap-2">
+                                    <input id="selFindSelector"
+                                           class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm"
+                                           placeholder='e.g. a[aria-label="Home"] or [data-uiedit-key="12"]' />
+                                    <button id="btnFindSelector" type="button"
+                                            class="inline-flex items-center gap-2 rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-xs hover:bg-slate-600/40 transition"
+                                            title="Select and scroll to this element in the preview">
+                                        <i class="fa-solid fa-location-crosshairs"></i>
+                                        <span>Go</span>
+                                    </button>
+                                </div>
+                                <div class="text-[11px] text-slate-400">Tip: you can paste a selector and press Enter.</div>
+                            </div>
+                        </div>
+
+                        <button id="btnStepNextToEdit" type="button"
+                                class="w-full inline-flex items-center justify-center gap-2 rounded-full border border-slate-500/60 bg-slate-800/40 px-4 py-2 text-slate-100 hover:bg-slate-600 transition">
+                            <i class="fa-solid fa-arrow-right text-sm"></i>
+                            <span>Next: Edit</span>
+                        </button>
+                    </div>
+
+                    <!-- STEP 2: Edit -->
+                    <div data-uiedit-step="edit" class="space-y-4 hidden">
+                        <!-- Mode switch (shows only relevant fields) -->
+                        <div class="flex flex-wrap gap-2" role="group" aria-label="Edit mode">
+                            <button type="button" class="ui-mode-btn ui-mode-btn-text is-active rounded-full px-3 py-1 text-xs" data-uiedit-mode="text">TEXT</button>
+                            <button type="button" class="ui-mode-btn ui-mode-btn-input rounded-full px-3 py-1 text-xs" data-uiedit-mode="input">INPUT</button>
+                            <button type="button" class="ui-mode-btn ui-mode-btn-select rounded-full px-3 py-1 text-xs" data-uiedit-mode="select">SELECT</button>
+                            <button type="button" class="ui-mode-btn ui-mode-btn-table rounded-full px-3 py-1 text-xs" data-uiedit-mode="table">TABLE</button>
+                            <button type="button" class="ui-mode-btn ui-mode-btn-image rounded-full px-3 py-1 text-xs" data-uiedit-mode="image">IMAGE</button>
+                            <button type="button" class="ui-mode-btn ui-mode-btn-icon rounded-full px-3 py-1 text-xs" data-uiedit-mode="icon">ICON</button>
+                            <button type="button" class="ui-mode-btn ui-mode-btn-tab rounded-full px-3 py-1 text-xs" data-uiedit-mode="tab">TAB</button>
+                            <button type="button" class="ui-mode-btn ui-mode-btn-move rounded-full px-3 py-1 text-xs" data-uiedit-mode="move">MOVE</button>
+                            <button type="button" class="ui-mode-btn ui-mode-btn-add rounded-full px-3 py-1 text-xs" data-uiedit-mode="add">ADD</button>
+                        </div>
+
+                        <div class="space-y-4">
+                        <div data-uiedit-group="meta" class="space-y-4">
+                            <div class="space-y-1">
+                                <label class="block text-xs font-medium text-slate-300">Classes (selected)</label>
+                                <input id="selClasses"
+                                       class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm"
+                                       readonly />
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Background (computed)</label>
+                                    <div class="flex items-center gap-3">
+                                        <input id="selBg" type="color"
+                                               class="w-16 rounded-lg border border-slate-500/50 bg-slate-800/40" />
+                                        <label class="inline-flex items-center gap-2 text-xs text-slate-300 select-none">
+                                            <input id="chkSetBg" type="checkbox" class="h-4 w-4" />
+                                            Apply
+                                        </label>
+                                    </div>
+                                    <input id="selBgRaw"
+                                           class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-xs"
+                                           readonly />
+                                </div>
+
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Text color (computed)</label>
+                                    <div class="flex items-center gap-3">
+                                        <input id="selTextColor" type="color"
+                                               class="w-16 rounded-lg border border-slate-500/50 bg-slate-800/40" />
+                                        <label class="inline-flex items-center gap-2 text-xs text-slate-300 select-none">
+                                            <input id="chkSetTextColor" type="checkbox" class="h-4 w-4" />
+                                            Apply
+                                        </label>
+                                    </div>
+                                    <input id="selTextColorRaw"
+                                           class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-xs"
+                                           readonly />
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+
+                        <!-- TEXT/TAB fields -->
+                        <div data-uiedit-group="text" class="space-y-4">
+                            <div class="space-y-1">
+                                <label class="block text-xs font-medium text-slate-300">Text</label>
+                                <textarea id="selText" rows="3"
+                                          class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm"></textarea>
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="block text-xs font-medium text-slate-300">Add class</label>
+                                <input id="selClassAdd"
+                                       placeholder="e.g. border border-amber-400/40"
+                                       class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm" />
+                            </div>
+                        </div>
+
+                        <!-- TABLE fields -->
+                        <div data-uiedit-group="table" class="pt-3 border-t border-slate-600/50 hidden">
+                            <div class="text-sm text-slate-100 font-semibold mb-2">
+                                <i class="fa-solid fa-table-columns mr-2"></i>Table tools
+                            </div>
+
+                            <div class="space-y-3">
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Table selector</label>
+                                    <input id="selTable"
+                                           class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm"
+                                           readonly />
+                                </div>
+
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Column index</label>
+                                    <input id="selCol"
+                                           class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm"
+                                           readonly />
+                                </div>
+
+                                <button id="btnHideCol" type="button"
+                                        class="w-full inline-flex items-center justify-center gap-2 rounded-full border border-slate-500/60 bg-slate-800/40 px-4 py-2 text-slate-100 hover:bg-slate-600 transition">
+                                    <i class="fa-solid fa-eye-slash text-sm"></i>
+                                    <span>Hide column</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- IMAGE fields -->
+                        <div data-uiedit-group="image" class="pt-3 border-t border-slate-600/50 hidden">
+                            <div class="text-sm text-slate-100 font-semibold mb-2">
+                                <i class="fa-regular fa-image mr-2"></i>Image
+                            </div>
+                            <div class="space-y-3">
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Src</label>
+                                    <input id="selImgSrc" type="text"
+                                           placeholder="/images/... or https://..."
+                                           class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm" />
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Alt</label>
+                                    <input id="selImgAlt" type="text"
+                                           placeholder="Alt text"
+                                           class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm" />
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Add class</label>
+                                    <input id="selImgClassAdd" type="text"
+                                           placeholder="e.g. rounded-xl shadow"
+                                           class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm" />
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div class="space-y-1">
+                                        <label class="block text-xs font-medium text-slate-300">Width</label>
+                                        <select id="selImgWidth"
+                                                class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm">
+                                            <option value="">(keep)</option>
+                                            <option value="auto">Auto</option>
+                                            <option value="16px">16px</option>
+                                            <option value="24px">24px</option>
+                                            <option value="32px">32px</option>
+                                            <option value="48px">48px</option>
+                                            <option value="64px">64px</option>
+                                            <option value="96px">96px</option>
+                                            <option value="128px">128px</option>
+                                            <option value="100%">100%</option>
+                                            <option value="custom">Custom (px)</option>
+                                        </select>
+                                        <input id="selImgWidthCustom" type="number" min="1" step="1"
+                                               placeholder="e.g. 120"
+                                               class="hidden mt-2 w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm" />
+                                    </div>
+
+                                    <div class="space-y-1">
+                                        <label class="block text-xs font-medium text-slate-300">Height</label>
+                                        <select id="selImgHeight"
+                                                class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm">
+                                            <option value="">(keep)</option>
+                                            <option value="auto">Auto</option>
+                                            <option value="16px">16px</option>
+                                            <option value="24px">24px</option>
+                                            <option value="32px">32px</option>
+                                            <option value="48px">48px</option>
+                                            <option value="64px">64px</option>
+                                            <option value="96px">96px</option>
+                                            <option value="128px">128px</option>
+                                            <option value="custom">Custom (px)</option>
+                                        </select>
+                                        <input id="selImgHeightCustom" type="number" min="1" step="1"
+                                               placeholder="e.g. 80"
+                                               class="hidden mt-2 w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm" />
+                                    </div>
+                                </div>
+
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Align</label>
+                                    <select id="selImgAlign"
+                                            class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm">
+                                        <option value="">(keep)</option>
+                                        <option value="inline">Inline</option>
+                                        <option value="left">Left</option>
+                                        <option value="center">Center</option>
+                                        <option value="right">Right</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ICON fields -->
+                        <div data-uiedit-group="icon" class="pt-3 border-t border-slate-600/50 hidden">
+                            <div class="text-sm text-slate-100 font-semibold mb-2">
+                                <i class="fa-solid fa-icons mr-2"></i>Icon
+                            </div>
+                            <div class="space-y-3">
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Classes (replace)</label>
+                                    <input id="selIconClass" type="text"
+                                           placeholder="e.g. fa-solid fa-user"
+                                           list="iconClassList"
+                                           class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm" />
+                                    <datalist id="iconClassList"></datalist>
+                                    <div class="text-[11px] text-slate-400">Tip: select the inner <span class="text-slate-200">&lt;i&gt;</span> element when possible.</div>
+                                </div>
+
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Icon image (pick or upload)</label>
+                                    <input id="selIconImageSrc" type="text"
+                                           placeholder="Pick an image (or upload below)"
+                                           list="iconImageList"
+                                           class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm" />
+                                    <datalist id="iconImageList"></datalist>
+
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                                        <div class="space-y-1">
+                                            <label class="block text-[11px] font-medium text-slate-300">Image size</label>
+                                            <select id="selIconImgSize"
+                                                    class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm">
+                                                <option value="1em">Auto (1em)</option>
+                                                <option value="16px">16px</option>
+                                                <option value="24px">24px</option>
+                                                <option value="32px">32px</option>
+                                                <option value="48px">48px</option>
+                                                <option value="64px">64px</option>
+                                            </select>
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="block text-[11px] font-medium text-slate-300">Upload</label>
+                                            <input id="fileIconUpload" type="file" accept="image/*"
+                                                   class="block w-full text-xs text-slate-200" />
+                                        </div>
+                                    </div>
+                                    <div class="text-[11px] text-slate-400">Upload stores the image inside the override (can be large).</div>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <button id="btnIconAddPrepend" type="button"
+                                            class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-brand px-4 py-2 text-white hover:bg-brand-600 transition">
+                                        <i class="fa-solid fa-plus text-sm"></i>
+                                        <span>Add (before)</span>
+                                    </button>
+                                    <button id="btnIconAddAppend" type="button"
+                                            class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-brand px-4 py-2 text-white hover:bg-brand-600 transition">
+                                        <i class="fa-solid fa-plus text-sm"></i>
+                                        <span>Add (after)</span>
+                                    </button>
+                                </div>
+
+                                <button id="btnIconDelete" type="button"
+                                        class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-red-600 px-4 py-2 text-white hover:bg-red-700 transition">
+                                    <i class="fa-solid fa-trash text-sm"></i>
+                                    <span>Remove icon</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- INPUT fields -->
+                        <div data-uiedit-group="input" class="pt-3 border-t border-slate-600/50 hidden">
+                            <div class="text-sm text-slate-100 font-semibold mb-2">
+                                <i class="fa-solid fa-i-cursor mr-2"></i>Input
+                            </div>
+                            <div class="space-y-3">
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Type</label>
+                                    <select id="selInputType"
+                                            class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm">
+                                        <option value="text">text</option>
+                                        <option value="number">number</option>
+                                        <option value="date">date</option>
+                                        <option value="datetime-local">datetime-local</option>
+                                        <option value="time">time</option>
+                                        <option value="email">email</option>
+                                        <option value="password">password</option>
+                                        <option value="tel">tel</option>
+                                        <option value="url">url</option>
+                                        <option value="search">search</option>
+                                    </select>
+                                </div>
+
+                                <div class="flex items-center justify-between">
+                                    <div class="text-xs text-slate-300">Required</div>
+                                    <label class="inline-flex items-center gap-2 text-xs text-slate-200 select-none">
+                                        <input id="chkInputRequired" type="checkbox" class="h-4 w-4" />
+                                        Required
+                                    </label>
+                                </div>
+
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Placeholder</label>
+                                    <input id="selInputPlaceholder" type="text"
+                                           placeholder="(empty removes placeholder)"
+                                           class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm" />
+                                </div>
+
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Value</label>
+                                    <input id="selInputValue" type="text"
+                                           placeholder="(sets element value)"
+                                           class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SELECT fields -->
+                        <div data-uiedit-group="select" class="pt-3 border-t border-slate-600/50 hidden">
+                            <div class="text-sm text-slate-100 font-semibold mb-2">
+                                <i class="fa-solid fa-list mr-2"></i>Select
+                            </div>
+                            <div class="space-y-3">
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Options (one per line)</label>
+                                    <textarea id="selSelectOptions" rows="5"
+                                              placeholder="value|label\nvalue2|label2"
+                                              class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm"></textarea>
+                                    <div class="text-[11px] text-slate-400">Format: value|label (label optional).</div>
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Selected value</label>
+                                    <input id="selSelectValue" type="text"
+                                           placeholder="(value to select)"
+                                           class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ADD fields (insert new elements) -->
+                        <div data-uiedit-group="add" class="pt-3 border-t border-slate-600/50 hidden">
+                            <div class="text-sm text-slate-100 font-semibold mb-2">
+                                <i class="fa-solid fa-square-plus mr-2"></i>Add element
+                            </div>
+
+                            <div class="space-y-3">
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Insert position</label>
+                                    <select id="selInsertPos"
+                                            class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm">
+                                        <option value="after">after selected</option>
+                                        <option value="before">before selected</option>
+                                        <option value="append">inside selected (append)</option>
+                                        <option value="prepend">inside selected (prepend)</option>
+                                    </select>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div class="space-y-1">
+                                        <label class="block text-xs font-medium text-slate-300">Field key</label>
+                                        <input id="selNewFieldKey" type="text" placeholder="e.g. nickname"
+                                               class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm" />
+                                        <div class="text-[11px] text-slate-400">Saved from POST as <span class="text-slate-200">dyn.&lt;key&gt;</span></div>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="block text-xs font-medium text-slate-300">Label</label>
+                                        <input id="selNewFieldLabel" type="text" placeholder="Label text"
+                                               class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm" />
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div class="space-y-1">
+                                        <label class="block text-xs font-medium text-slate-300">Input type</label>
+                                        <select id="selNewFieldType"
+                                                class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm">
+                                            <option value="text">text</option>
+                                            <option value="number">number</option>
+                                            <option value="date">date</option>
+                                            <option value="email">email</option>
+                                            <option value="tel">tel</option>
+                                            <option value="url">url</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="flex items-center justify-between mt-6">
+                                        <div class="text-xs text-slate-300">Required</div>
+                                        <label class="inline-flex items-center gap-2 text-xs text-slate-200 select-none">
+                                            <input id="chkNewFieldRequired" type="checkbox" class="h-4 w-4" />
+                                            Required
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Placeholder</label>
+                                    <input id="selNewFieldPlaceholder" type="text" placeholder="(optional)"
+                                           class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm" />
+                                </div>
+
+                                <div class="space-y-1">
+                                    <label class="block text-xs font-medium text-slate-300">Custom HTML (optional)</label>
+                                    <textarea id="selInsertHtml" rows="4" placeholder="If set, this HTML will be inserted (scripts/events stripped)."
+                                              class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm"></textarea>
+                                </div>
+
+                                <div class="pt-3 border-t border-slate-600/50 space-y-3">
+                                    <div class="text-sm text-slate-100 font-semibold">
+                                        <i class="fa-regular fa-image mr-2"></i>Add picture
+                                    </div>
+
+                                    <div class="space-y-1">
+                                        <label class="block text-xs font-medium text-slate-300">Image src (URL or upload)</label>
+                                        <input id="selAddImgSrc" type="text"
+                                               placeholder="/images/... or https://..."
+                                               class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm" />
+                                        <input id="fileAddImgUpload" type="file" accept="image/*"
+                                               class="block w-full text-xs text-slate-200" />
+                                    </div>
+
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div class="space-y-1">
+                                            <label class="block text-xs font-medium text-slate-300">Alt</label>
+                                            <input id="selAddImgAlt" type="text"
+                                                   placeholder="Alt text"
+                                                   class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm" />
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="block text-xs font-medium text-slate-300">Width</label>
+                                            <select id="selAddImgSize"
+                                                    class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm">
+                                                <option value="">Auto</option>
+                                                <option value="16">16px</option>
+                                                <option value="24">24px</option>
+                                                <option value="32">32px</option>
+                                                <option value="48">48px</option>
+                                                <option value="64">64px</option>
+                                                <option value="96">96px</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div class="space-y-1">
+                                            <label class="block text-xs font-medium text-slate-300">Height</label>
+                                            <select id="selAddImgHeight"
+                                                    class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm">
+                                                <option value="">Auto</option>
+                                                <option value="16">16px</option>
+                                                <option value="24">24px</option>
+                                                <option value="32">32px</option>
+                                                <option value="48">48px</option>
+                                                <option value="64">64px</option>
+                                                <option value="96">96px</option>
+                                            </select>
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="block text-xs font-medium text-slate-300">Place</label>
+                                            <select id="selAddImgAlign"
+                                                    class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm">
+                                                <option value="inline">Inline</option>
+                                                <option value="left">Left</option>
+                                                <option value="center">Center</option>
+                                                <option value="right">Right</option>
+                                            </select>
+                                            <div class="text-[11px] text-slate-400">Insertion position is controlled by <span class="text-slate-200">Insert position</span> above.</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-1">
+                                        <label class="block text-xs font-medium text-slate-300">Add class (optional)</label>
+                                        <input id="selAddImgClassAdd" type="text"
+                                               placeholder="e.g. rounded-lg"
+                                               class="w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 text-sm" />
+                                    </div>
+
+                                    <div class="rounded-lg border border-slate-600/40 bg-slate-900/20 p-3">
+                                        <div class="text-[11px] text-slate-300 mb-2">Preview</div>
+                                        <div class="rounded-lg border border-slate-600/40 bg-slate-800/20 p-3 overflow-auto">
+                                            <img id="addImgPreviewImg" alt="" />
+                                        </div>
+                                    </div>
+
+                                    <button id="btnAddImage" type="button"
+                                            class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-brand px-4 py-2 text-white hover:bg-brand-600 transition">
+                                        <i class="fa-solid fa-image"></i>
+                                        <span>Insert picture</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MOVE fields (drag & drop free-move) -->
+                        <div data-uiedit-group="move" class="pt-3 border-t border-slate-600/50 hidden">
+                            <div class="text-sm text-slate-100 font-semibold mb-2">
+                                <i class="fa-solid fa-up-down-left-right mr-2"></i>Move element
+                            </div>
+
+                            <div class="flex items-center gap-2 mb-3">
+                                <button id="btnMoveUp" type="button"
+                                        class="inline-flex items-center gap-2 rounded-full border border-slate-500/60 bg-slate-800/40 px-3 py-1.5 text-xs text-slate-100 hover:bg-slate-600 transition">
+                                    <i class="fa-solid fa-arrow-up"></i>
+                                    <span>Up</span>
+                                </button>
+                                <button id="btnMoveDown" type="button"
+                                        class="inline-flex items-center gap-2 rounded-full border border-slate-500/60 bg-slate-800/40 px-3 py-1.5 text-xs text-slate-100 hover:bg-slate-600 transition">
+                                    <i class="fa-solid fa-arrow-down"></i>
+                                    <span>Down</span>
+                                </button>
+                                <div class="text-xs text-slate-400">Keyboard: ↑ / ↓</div>
+                            </div>
+
+                            <div class="text-xs text-slate-300 space-y-2">
+                                <div>In the preview: click an element to select, then drag it and drop it on another element.</div>
+                                <div>Drop anywhere to place it freely (pixel position is saved).</div>
+                                <div class="text-slate-400">Tip: this is applied locally immediately; click <span class="text-slate-100 font-medium">Save</span> to persist.</div>
+                            </div>
+                        </div>
+                        <button id="btnApply" type="button"
+                                class="w-full inline-flex items-center justify-center gap-2 rounded-full border border-slate-500/60 bg-slate-800/40 px-4 py-2 text-slate-100 hover:bg-slate-600 transition">
+                            <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
+                            <span>Apply (local)</span>
+                        </button>
+
+                        <div class="flex items-center gap-2">
+                            <button id="btnStepBackToSelect" type="button"
+                                    class="inline-flex items-center gap-2 rounded-full border border-slate-500/60 bg-slate-800/40 px-4 py-2 text-slate-100 hover:bg-slate-600 transition">
+                                <i class="fa-solid fa-arrow-left text-sm"></i>
+                                <span>Back</span>
+                            </button>
+                            <button id="btnStepNextToSave" type="button"
+                                    class="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-brand px-4 py-2 text-white hover:bg-brand-600 transition">
+                                <i class="fa-solid fa-arrow-right text-sm"></i>
+                                <span>Next: Save</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: Save -->
+                    <div data-uiedit-step="save" class="space-y-3 hidden">
+                        <div class="text-xs text-slate-300">
+                            Apply changes locally, then Save to persist.
+                        </div>
+
+                        <div class="flex flex-wrap gap-2">
+                            <button id="btnUndo" type="button" disabled
+                                    class="inline-flex items-center gap-2 rounded-full border border-slate-500/60 bg-slate-800/40 px-4 py-2 text-slate-100 hover:bg-slate-600 transition disabled:opacity-40 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-rotate-left text-sm"></i>
+                                <span>Undo</span>
+                            </button>
+
+                            <button id="btnRedo" type="button" disabled
+                                    class="inline-flex items-center gap-2 rounded-full border border-slate-500/60 bg-slate-800/40 px-4 py-2 text-slate-100 hover:bg-slate-600 transition disabled:opacity-40 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-rotate-right text-sm"></i>
+                                <span>Redo</span>
+                            </button>
+                        </div>
+
+                        <button id="btnResetSelected" type="button" disabled
+                                class="w-full inline-flex items-center justify-center gap-2 rounded-full border border-red-500/50 bg-red-600/20 px-4 py-2 text-red-100 hover:bg-red-600/30 transition disabled:opacity-40 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-rotate-left text-sm"></i>
+                            <span>Reset selected</span>
+                        </button>
+
+                        <button id="btnSave" type="button"
+                                class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-brand px-4 py-2 text-white hover:bg-brand-600 transition">
+                            <i class="fa-solid fa-floppy-disk text-sm"></i>
+                            <span>Save</span>
+                        </button>
+
+                        <button id="btnReset" type="button"
+                                class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-red-600 px-4 py-2 text-white hover:bg-red-700 transition">
+                            <i class="fa-solid fa-trash-can text-sm"></i>
+                            <span>Reset all</span>
+                        </button>
+
+                        <button id="btnStepBackToEdit" type="button"
+                                class="w-full inline-flex items-center justify-center gap-2 rounded-full border border-slate-500/60 bg-slate-800/40 px-4 py-2 text-slate-100 hover:bg-slate-600 transition">
+                            <i class="fa-solid fa-arrow-left text-sm"></i>
+                            <span>Back: Edit</span>
+                        </button>
+                    </div>
+
+                    </div><!-- /space-y -->
+                </div>
+            </div>
+
+        </div><!-- /grid -->
+
+        <details class="mt-5 rounded-xl border border-slate-600/40 bg-slate-900/20 p-3">
+            <summary class="cursor-pointer text-sm text-slate-200 select-none">Debug</summary>
+            <pre id="dbgLog" class="mt-3 text-xs text-slate-200 whitespace-pre-wrap break-words max-h-56 overflow-auto"></pre>
+        </details>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        // English comments only inside code.
+        (function () {
+            "use strict";
+
+            const frame = document.getElementById("uiFrame");
+            const status = document.getElementById("status");
+
+            const selSelector = document.getElementById("selSelector");
+            const selClasses = document.getElementById("selClasses");
+            const selBgRaw = document.getElementById("selBgRaw");
+            const selTextColor = document.getElementById("selTextColor");
+            const selTextColorRaw = document.getElementById("selTextColorRaw");
+            const chkSetBg = document.getElementById("chkSetBg");
+            const chkSetTextColor = document.getElementById("chkSetTextColor");
+
+            const selText = document.getElementById("selText");
+            const selBg = document.getElementById("selBg");
+            const selClassAdd = document.getElementById("selClassAdd");
+
+            const selImgSrc = document.getElementById("selImgSrc");
+            const selImgAlt = document.getElementById("selImgAlt");
+            const selImgClassAdd = document.getElementById("selImgClassAdd");
+            const selImgWidth = document.getElementById("selImgWidth");
+            const selImgWidthCustom = document.getElementById("selImgWidthCustom");
+            const selImgHeight = document.getElementById("selImgHeight");
+            const selImgHeightCustom = document.getElementById("selImgHeightCustom");
+            const selImgAlign = document.getElementById("selImgAlign");
+
+            const selIconClass = document.getElementById("selIconClass");
+            const btnIconDelete = document.getElementById("btnIconDelete");
+            const iconClassList = document.getElementById("iconClassList");
+            const selIconImageSrc = document.getElementById("selIconImageSrc");
+            const iconImageList = document.getElementById("iconImageList");
+            const selIconImgSize = document.getElementById("selIconImgSize");
+            const fileIconUpload = document.getElementById("fileIconUpload");
+            const btnIconAddPrepend = document.getElementById("btnIconAddPrepend");
+            const btnIconAddAppend = document.getElementById("btnIconAddAppend");
+
+            const selInputType = document.getElementById("selInputType");
+            const chkInputRequired = document.getElementById("chkInputRequired");
+            const selInputPlaceholder = document.getElementById("selInputPlaceholder");
+            const selInputValue = document.getElementById("selInputValue");
+            const selSelectOptions = document.getElementById("selSelectOptions");
+            const selSelectValue = document.getElementById("selSelectValue");
+
+            const selInsertPos = document.getElementById("selInsertPos");
+            const selNewFieldKey = document.getElementById("selNewFieldKey");
+            const selNewFieldLabel = document.getElementById("selNewFieldLabel");
+            const selNewFieldType = document.getElementById("selNewFieldType");
+            const chkNewFieldRequired = document.getElementById("chkNewFieldRequired");
+            const selNewFieldPlaceholder = document.getElementById("selNewFieldPlaceholder");
+            const selInsertHtml = document.getElementById("selInsertHtml");
+
+            const selAddImgSrc = document.getElementById("selAddImgSrc");
+            const fileAddImgUpload = document.getElementById("fileAddImgUpload");
+            const selAddImgAlt = document.getElementById("selAddImgAlt");
+            const selAddImgSize = document.getElementById("selAddImgSize");
+            const selAddImgHeight = document.getElementById("selAddImgHeight");
+            const selAddImgAlign = document.getElementById("selAddImgAlign");
+            const selAddImgClassAdd = document.getElementById("selAddImgClassAdd");
+            const btnAddImage = document.getElementById("btnAddImage");
+            const addImgPreviewImg = document.getElementById("addImgPreviewImg");
+
+            const selTable = document.getElementById("selTable");
+            const selCol = document.getElementById("selCol");
+
+            const btnHideCol = document.getElementById("btnHideCol");
+            const btnApply = document.getElementById("btnApply");
+            const btnUndo = document.getElementById("btnUndo");
+            const btnRedo = document.getElementById("btnRedo");
+            const btnResetSelected = document.getElementById("btnResetSelected");
+            const btnSave = document.getElementById("btnSave");
+            const btnReset = document.getElementById("btnReset");
+            const btnMoveUp = document.getElementById("btnMoveUp");
+            const btnMoveDown = document.getElementById("btnMoveDown");
+
+            const selMoveContainer = document.getElementById("selMoveContainer");
+            const selMoveReference = document.getElementById("selMoveReference");
+            const selMovePos = document.getElementById("selMovePos");
+            const btnMoveTo = document.getElementById("btnMoveTo");
+
+            const btnCopySelector = document.getElementById("btnCopySelector");
+            const selFindSelector = document.getElementById("selFindSelector");
+            const btnFindSelector = document.getElementById("btnFindSelector");
+
+            const btnQuickAdd = document.getElementById("btnQuickAdd");
+            const btnQuickRemove = document.getElementById("btnQuickRemove");
+
+            // Wizard step controls
+            const stepButtons = Array.from(document.querySelectorAll("[data-uiedit-step-btn]"));
+            const stepPanels = Array.from(document.querySelectorAll("[data-uiedit-step]"));
+            const btnStepNextToEdit = document.getElementById("btnStepNextToEdit");
+            const btnStepBackToSelect = document.getElementById("btnStepBackToSelect");
+            const btnStepNextToSave = document.getElementById("btnStepNextToSave");
+            const btnStepBackToEdit = document.getElementById("btnStepBackToEdit");
+
+            const dbgLog = document.getElementById("dbgLog");
+
+            const pageKey = @Html.Raw(pageKeyJs);
+            const featureKey = @Html.Raw(featureKeyJs);
+            const returnPath = @Html.Raw(returnPathJs);
+
+            // Hydrate with already-saved overrides so Reset selected can work across sessions.
+            const initialOverrides = @Html.Raw(Model.InitialOverridesJson);
+
+            function derivePageKeyFromReturnPath(p) {
+                // Match UiLayoutMiddleware normalization: trim '/', default 'root'.
+                const raw = String(p || "");
+                const pathOnly = raw.split("?")[0];
+                const trimmed = pathOnly.replace(/^\/+|\/+$/g, "");
+                return trimmed || "root";
+            }
+
+            // If the editor is opened without an explicit pageKey, fall back to the returnPath.
+            const effectivePageKey = (String(pageKey || "").trim()) ? String(pageKey).trim() : derivePageKeyFromReturnPath(returnPath);
+
+            const overrides = Array.isArray(initialOverrides) ? initialOverrides.slice() : [];
+            const undoStack = [];
+            const redoStack = [];
+            let currentSelector = null;
+            let currentKind = null;
+            let currentInsertContainerSelector = null;
+            let currentIconSelector = null;
+
+            const initialFrameUrl = frame ? (frame.getAttribute("src") || "") : "";
+            let pendingReapplyAfterReload = false;
+
+            let currentMode = "text";
+            const modeButtons = Array.from(document.querySelectorAll("[data-uiedit-mode]"));
+            const groupMeta = document.querySelector('[data-uiedit-group="meta"]');
+            const groupText = document.querySelector('[data-uiedit-group="text"]');
+            const groupTable = document.querySelector('[data-uiedit-group="table"]');
+            const groupImage = document.querySelector('[data-uiedit-group="image"]');
+            const groupIcon = document.querySelector('[data-uiedit-group="icon"]');
+            const groupInput = document.querySelector('[data-uiedit-group="input"]');
+            const groupSelect = document.querySelector('[data-uiedit-group="select"]');
+            const groupAdd = document.querySelector('[data-uiedit-group="add"]');
+            const groupMove = document.querySelector('[data-uiedit-group="move"]');
+
+            let currentStep = "select";
+
+            function normalizeStep(s) {
+                const v = String(s || "").toLowerCase().trim();
+                if (v === "select" || v === "edit" || v === "save") return v;
+                return "select";
+            }
+
+            function setStep(step) {
+                currentStep = normalizeStep(step);
+                stepButtons.forEach(b => {
+                    const isActive = normalizeStep(b.getAttribute("data-uiedit-step-btn")) === currentStep;
+                    b.classList.toggle("is-active", isActive);
+                });
+                stepPanels.forEach(p => {
+                    const isActive = normalizeStep(p.getAttribute("data-uiedit-step")) === currentStep;
+                    p.classList.toggle("hidden", !isActive);
+                });
+            }
+
+            stepButtons.forEach(b => {
+                b.addEventListener("click", () => setStep(b.getAttribute("data-uiedit-step-btn")));
+            });
+
+            if (btnStepNextToEdit) btnStepNextToEdit.addEventListener("click", () => setStep("edit"));
+            if (btnStepBackToSelect) btnStepBackToSelect.addEventListener("click", () => setStep("select"));
+            if (btnStepNextToSave) btnStepNextToSave.addEventListener("click", () => setStep("save"));
+            if (btnStepBackToEdit) btnStepBackToEdit.addEventListener("click", () => setStep("edit"));
+
+            function normalizeMode(m) {
+                const v = String(m || "").toLowerCase().trim();
+                if (v === "label") return "text";
+                if (v === "input") return "input";
+                if (v === "select") return "select";
+                if (v === "add") return "add";
+                if (v === "move") return "move";
+                if (v === "table") return "table";
+                if (v === "image") return "image";
+                if (v === "icon") return "icon";
+                if (v === "tab") return "tab";
+                return "text";
+            }
+
+            function setMode(mode) {
+                currentMode = normalizeMode(mode);
+                modeButtons.forEach(b => {
+                    const isActive = normalizeMode(b.getAttribute("data-uiedit-mode")) === currentMode;
+                    b.classList.toggle("is-active", isActive);
+                });
+
+                // TEXT/TAB share the same fields group.
+                const showText = (currentMode === "text" || currentMode === "tab");
+                if (groupMeta) groupMeta.classList.toggle("hidden", currentMode === "add" || currentMode === "move");
+                if (groupText) groupText.classList.toggle("hidden", !showText);
+                if (groupTable) groupTable.classList.toggle("hidden", currentMode !== "table");
+                if (groupImage) groupImage.classList.toggle("hidden", currentMode !== "image");
+                if (groupIcon) groupIcon.classList.toggle("hidden", currentMode !== "icon");
+                if (groupInput) groupInput.classList.toggle("hidden", currentMode !== "input");
+                if (groupAdd) groupAdd.classList.toggle("hidden", currentMode !== "add");
+                if (groupMove) groupMove.classList.toggle("hidden", currentMode !== "move");
+                if (groupSelect) groupSelect.classList.toggle("hidden", currentMode !== "select");
+
+                // Inform iframe so it can enable/disable drag & drop behavior.
+                postToFrame({ type: "uiedit:setMode", mode: currentMode });
+            }
+
+            function updateModeButtonsVisibility(hasSelection, kind) {
+                const normalizedKind = normalizeMode(kind);
+                const allow = new Set(["move", "add"]);
+                if (hasSelection && normalizedKind && !allow.has(normalizedKind)) {
+                    allow.add(normalizedKind);
+                }
+
+                modeButtons.forEach(b => {
+                    const mode = normalizeMode(b.getAttribute("data-uiedit-mode"));
+                    const shouldShow = allow.has(mode);
+                    b.classList.toggle("hidden", !shouldShow);
+                });
+
+                // If current mode is hidden, switch to a safe default.
+                if (!allow.has(currentMode)) {
+                    setMode("move");
+                }
+            }
+
+            modeButtons.forEach(b => {
+                b.addEventListener("click", () => setMode(b.getAttribute("data-uiedit-mode")));
+            });
+
+            // Initial state
+            setMode("move");
+            updateModeButtonsVisibility(false, null);
+            setStep("select");
+
+            function setStatus(t) { if (status) status.textContent = t || ""; }
+
+            function updateUndoButton() {
+                try {
+                    if (!btnUndo) return;
+                    const has = undoStack.length > 0;
+                    btnUndo.disabled = !has;
+                    btnUndo.title = has ? ("Undo last change (" + undoStack.length + " step(s) available)") : "Nothing to undo";
+                } catch { }
+            }
+
+            function updateQuickRemoveButton() {
+                try {
+                    if (!btnQuickRemove) return;
+                    const hasSelection = !!(currentSelector && String(currentSelector).trim());
+                    btnQuickRemove.disabled = !hasSelection;
+                    btnQuickRemove.title = hasSelection ? "Remove the selected element" : "Select an element first";
+                } catch { }
+            }
+
+            function updateRedoButton() {
+                try {
+                    if (!btnRedo) return;
+                    const has = redoStack.length > 0;
+                    btnRedo.disabled = !has;
+                    btnRedo.title = has ? ("Redo last undone change (" + redoStack.length + " step(s) available)") : "Nothing to redo";
+                } catch { }
+            }
+
+            function cloneJsonSafe(x) {
+                try {
+                    if (typeof structuredClone === "function") return structuredClone(x);
+                } catch { }
+                try {
+                    return JSON.parse(JSON.stringify(x));
+                } catch {
+                    return null;
+                }
+            }
+
+            function pushUndo(reason) {
+                try {
+                    const snap = cloneJsonSafe(overrides);
+                    if (!snap) return;
+
+                    // Any new change invalidates redo history.
+                    redoStack.length = 0;
+                    updateRedoButton();
+
+                    undoStack.push({ at: Date.now(), reason: String(reason || "") , overrides: snap });
+                    // Avoid unbounded growth.
+                    if (undoStack.length > 50) undoStack.shift();
+                    updateUndoButton();
+                } catch { }
+            }
+
+            function isTypingTarget(el) {
+                try {
+                    const t = el;
+                    if (!t) return false;
+                    const tag = String(t.tagName || "").toLowerCase();
+                    if (tag === "input" || tag === "textarea" || tag === "select") return true;
+                    if (t.isContentEditable) return true;
+                } catch { }
+                return false;
+            }
+
+            function doUndo() {
+                if (!undoStack.length) {
+                    setStatus("Nothing to undo.");
+                    return;
+                }
+
+                // Save current state for redo.
+                const cur = cloneJsonSafe(overrides);
+                if (cur) {
+                    redoStack.push({ at: Date.now(), reason: "undo", overrides: cur });
+                    if (redoStack.length > 50) redoStack.shift();
+                }
+
+                const last = undoStack.pop();
+                const prev = last && Array.isArray(last.overrides) ? last.overrides : null;
+                if (!prev) {
+                    setStatus("Undo failed: invalid snapshot.");
+                    updateUndoButton();
+                    updateRedoButton();
+                    return;
+                }
+
+                // Restore overrides array in-place.
+                overrides.length = 0;
+                prev.forEach(x => overrides.push(x));
+
+                updateUndoButton();
+                updateRedoButton();
+                updateResetSelectedButton();
+
+                // Reload preview and re-apply all overrides to match restored state.
+                setStatus("Undone. Reloading preview...");
+                reloadFrameAndReapply();
+            }
+
+            function doRedo() {
+                if (!redoStack.length) {
+                    setStatus("Nothing to redo.");
+                    return;
+                }
+
+                // Save current state for undo.
+                const cur = cloneJsonSafe(overrides);
+                if (cur) {
+                    undoStack.push({ at: Date.now(), reason: "redo", overrides: cur });
+                    if (undoStack.length > 50) undoStack.shift();
+                }
+
+                const last = redoStack.pop();
+                const next = last && Array.isArray(last.overrides) ? last.overrides : null;
+                if (!next) {
+                    setStatus("Redo failed: invalid snapshot.");
+                    updateUndoButton();
+                    updateRedoButton();
+                    return;
+                }
+
+                // Restore overrides array in-place.
+                overrides.length = 0;
+                next.forEach(x => overrides.push(x));
+
+                updateUndoButton();
+                updateRedoButton();
+                updateResetSelectedButton();
+
+                // Reload preview and re-apply all overrides to match restored state.
+                setStatus("Redone. Reloading preview...");
+                reloadFrameAndReapply();
+            }
+
+            function dbg(line, obj) {
+                try {
+                    const ts = new Date().toISOString().replace('T', ' ').replace('Z', '');
+                    const msg = "[" + ts + "] " + String(line ?? "");
+                    if (obj !== undefined) {
+                        console.log("[UIEditor]", line, obj);
+                    } else {
+                        console.log("[UIEditor]", line);
+                    }
+                    if (dbgLog) {
+                        dbgLog.textContent = (dbgLog.textContent ? (dbgLog.textContent + "\n") : "") + msg;
+                        // keep latest lines visible
+                        dbgLog.scrollTop = dbgLog.scrollHeight;
+                    }
+                } catch { }
+            }
+
+            function getAntiForgeryToken() {
+                const el = document.querySelector('input[name="__RequestVerificationToken"]');
+                return el ? el.value : "";
+            }
+
+            function upsertOverride(selector, actions) {
+                pushUndo("upsertOverride");
+                const idx = overrides.findIndex(x => x && x.selector === selector);
+                if (idx >= 0) overrides[idx].actions = actions;
+                else overrides.push({ selector, actions });
+
+                updateResetSelectedButton();
+                updateQuickRemoveButton();
+            }
+
+            function appendOverrideActions(selector, extraActions) {
+                if (!selector || !Array.isArray(extraActions) || !extraActions.length) return;
+                pushUndo("appendOverride");
+                const idx = overrides.findIndex(x => x && x.selector === selector);
+                if (idx < 0) {
+                    overrides.push({ selector, actions: extraActions });
+                    updateResetSelectedButton();
+                    updateQuickRemoveButton();
+                    return;
+                }
+
+                const existing = Array.isArray(overrides[idx].actions) ? overrides[idx].actions : [];
+                overrides[idx].actions = existing.concat(extraActions);
+                updateResetSelectedButton();
+                updateQuickRemoveButton();
+            }
+
+            function upsertStyleActions(selector, styleMap) {
+                try {
+                    if (!selector) return;
+                    const keys = (styleMap && typeof styleMap === "object")
+                        ? Object.keys(styleMap).map(k => String(k || "").trim()).filter(Boolean)
+                        : [];
+                    if (!keys.length) return;
+
+                    pushUndo("style");
+
+                    const idx = overrides.findIndex(x => x && x.selector === selector);
+                    const styleActions = keys.map(k => ({ type: "style", name: k, value: String(styleMap[k] ?? "") }));
+
+                    if (idx < 0) {
+                        overrides.push({ selector, actions: styleActions });
+                        updateResetSelectedButton();
+                        updateQuickRemoveButton();
+                        return;
+                    }
+
+                    const existing = Array.isArray(overrides[idx].actions) ? overrides[idx].actions : [];
+                    const rest = existing.filter(a => !(a && a.type === "style" && keys.includes(String(a.name || "").trim())));
+                    overrides[idx].actions = rest.concat(styleActions);
+                    updateResetSelectedButton();
+                    updateQuickRemoveButton();
+                } catch { }
+            }
+
+            function upsertMoveOverride(selector, moveAction) {
+                if (!selector || !moveAction) return;
+                pushUndo("move");
+                const idx = overrides.findIndex(x => x && x.selector === selector);
+                if (idx < 0) {
+                    overrides.push({ selector, actions: [moveAction] });
+                    updateResetSelectedButton();
+                    updateQuickRemoveButton();
+                    return;
+                }
+
+                const existing = overrides[idx].actions;
+                const rest = Array.isArray(existing) ? existing.filter(a => a && a.type !== "move" && a.type !== "moveAbs") : [];
+                rest.push(moveAction);
+                overrides[idx].actions = rest;
+                updateResetSelectedButton();
+                updateQuickRemoveButton();
+            }
+
+            if (btnQuickAdd) {
+                btnQuickAdd.addEventListener("click", () => {
+                    // Add is relative to selection (after/before/append/prepend), but we can still take the user to Add mode.
+                    setStep("edit");
+                    setMode("add");
+                    if (!currentSelector) {
+                        setStatus("Tip: select an element first to choose where to insert.");
+                    }
+                });
+            }
+
+            if (btnQuickRemove) {
+                btnQuickRemove.addEventListener("click", () => {
+                    if (!currentSelector) {
+                        setStatus("Select an element first.");
+                        return;
+                    }
+
+                    const ok = confirm("Remove selected element? This will be saved as an override.");
+                    if (!ok) return;
+
+                    appendOverrideActions(currentSelector, [{ type: "remove" }]);
+                    updateQuickRemoveButton();
+                    updateModeButtonsVisibility(!!currentSelector, currentKind);
+
+                    setStatus("Removed. Reloading preview...");
+                    reloadFrameAndReapply();
+                    setStep("save");
+                });
+            }
+
+            if (btnUndo) {
+                btnUndo.addEventListener("click", () => {
+                    doUndo();
+                });
+            }
+
+            if (btnRedo) {
+                btnRedo.addEventListener("click", () => {
+                    doRedo();
+                });
+            }
+
+            if (btnIconDelete) {
+                btnIconDelete.addEventListener("click", () => {
+                    const iconSel = String(currentIconSelector || currentSelector || "").trim();
+                    if (!iconSel) {
+                        setStatus("No element selected.");
+                        return;
+                    }
+
+                    const actions = [{ type: "remove" }];
+                    upsertOverride(iconSel, actions);
+                    const ok = postToFrame({ type: "uiedit:apply", selector: iconSel, actions });
+                    setStatus(ok ? "Icon deleted (not saved yet)." : "Iframe not ready. Try again.");
+                });
+            }
+
+            function buildIconHtmlFromInputs(dataUrlOverride) {
+                const pickedSrc = String(selIconImageSrc?.value || "").trim();
+                const cls = String(selIconClass?.value || "").trim();
+                const src = String(dataUrlOverride || pickedSrc || "").trim();
+
+                if (src) {
+                    const safe = src.replace(/"/g, "&quot;");
+                    const sizeCss = normalizeSizeCss(selIconImgSize?.value, "1em");
+                    return `<img src="${safe}" alt="" style="width:${sizeCss};height:${sizeCss};display:inline-block;vertical-align:middle;object-fit:contain;" />`;
+                }
+
+                if (cls) {
+                    const safeCls = cls.replace(/"/g, "").trim();
+                    return `<i class="${safeCls}"></i>`;
+                }
+
+                return "";
+            }
+
+            async function addIconAt(position) {
+                if (!currentSelector) {
+                    setStatus("No element selected.");
+                    return;
+                }
+
+                const containerSel = String(currentInsertContainerSelector || currentSelector || "").trim();
+                if (!containerSel) {
+                    setStatus("ICON: no container to insert into.");
+                    return;
+                }
+
+                let dataUrl = "";
+                const file = (fileIconUpload && fileIconUpload.files && fileIconUpload.files.length)
+                    ? fileIconUpload.files[0]
+                    : null;
+                if (file) dataUrl = await readFileAsDataUrl(file);
+
+                const html = buildIconHtmlFromInputs(dataUrl);
+                if (!html) {
+                    setStatus("ICON: pick an image, upload, or enter classes.");
+                    return;
+                }
+
+                const action = { type: "insertHtml", html, position };
+                appendOverrideActions(containerSel, [action]);
+                const ok = postToFrame({ type: "uiedit:apply", selector: containerSel, actions: [action] });
+                setStatus(ok ? "Icon added (not saved yet)." : "Iframe not ready. Try again.");
+            }
+
+            if (btnIconAddPrepend) btnIconAddPrepend.addEventListener("click", () => addIconAt("prepend"));
+            if (btnIconAddAppend) btnIconAddAppend.addEventListener("click", () => addIconAt("append"));
+
+            if (btnMoveUp) {
+                btnMoveUp.addEventListener("click", () => requestMoveStep("up"));
+            }
+
+            if (btnMoveDown) {
+                btnMoveDown.addEventListener("click", () => requestMoveStep("down"));
+            }
+
+            if (btnMoveTo) {
+                btnMoveTo.addEventListener("click", () => {
+                    if (!currentSelector) {
+                        setStatus("No element selected.");
+                        return;
+                    }
+
+                    const pos = String(selMovePos?.value || "after").toLowerCase().trim();
+                    const containerSelector = String(selMoveContainer?.value || "").trim();
+                    const referenceSelector = String(selMoveReference?.value || "").trim();
+
+                    if ((pos === "append" || pos === "prepend") && !containerSelector) {
+                        setStatus("MOVE: provide a container selector for append/prepend.");
+                        return;
+                    }
+
+                    if ((pos === "before" || pos === "after") && !referenceSelector) {
+                        setStatus("MOVE: provide a reference selector for before/after.");
+                        return;
+                    }
+
+                    const moveAction = {
+                        type: "move",
+                        containerSelector,
+                        referenceSelector,
+                        position: pos
+                    };
+
+                    upsertMoveOverride(currentSelector, moveAction);
+                    const ok = postToFrame({ type: "uiedit:apply", selector: currentSelector, actions: [moveAction] });
+                    setStatus(ok ? "Moved locally (not saved yet)." : "Preview not ready. Try again.");
+                });
+            }
+
+            if (btnCopySelector) {
+                btnCopySelector.addEventListener("click", async () => {
+                    const s = (selSelector?.value || "").trim();
+                    if (!s) {
+                        setStatus("Nothing to copy.");
+                        return;
+                    }
+                    const ok = await copyTextToClipboard(s);
+                    setStatus(ok ? "Selector copied." : "Copy failed (clipboard blocked).");
+                });
+            }
+
+            if (btnFindSelector) {
+                btnFindSelector.addEventListener("click", () => findAndSelectInPreview(selFindSelector?.value));
+            }
+
+            if (selFindSelector) {
+                selFindSelector.addEventListener("keydown", (e) => {
+                    if (e && e.key === "Enter") {
+                        e.preventDefault();
+                        findAndSelectInPreview(selFindSelector.value);
+                    }
+                });
+            }
+
+            // Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y shortcuts (avoid hijacking normal typing in inputs)
+            window.addEventListener("keydown", (e) => {
+                try {
+                    if (!e) return;
+                    if (!(e.ctrlKey || e.metaKey)) return;
+                    const k = String(e.key || "").toLowerCase();
+                    if (isTypingTarget(e.target)) return;
+
+                    if (k === "z") {
+                        e.preventDefault();
+                        if (e.shiftKey) doRedo();
+                        else doUndo();
+                        return;
+                    }
+
+                    if (k === "y") {
+                        e.preventDefault();
+                        doRedo();
+                        return;
+                    }
+
+                    if (k === "s") {
+                        e.preventDefault();
+                        if (btnSave && !btnSave.disabled) btnSave.click();
+                        return;
+                    }
+                } catch { }
+            });
+
+            // Arrow keys for MOVE mode
+            window.addEventListener("keydown", (e) => {
+                try {
+                    if (!e) return;
+                    if (isTypingTarget(e.target)) return;
+                    if (currentMode !== "move") return;
+
+                    if (e.key === "ArrowUp") {
+                        e.preventDefault();
+                        requestMoveStep("up");
+                        return;
+                    }
+                    if (e.key === "ArrowDown") {
+                        e.preventDefault();
+                        requestMoveStep("down");
+                        return;
+                    }
+                } catch { }
+            });
+
+            function getResetTargetSelector() {
+                // For TABLE mode, the effective selector is the table selector, not the clicked cell.
+                const tableSel = (selTable?.value || "").trim();
+                if (currentMode === "table" && tableSel) return tableSel;
+                return currentSelector;
+            }
+
+            function updateResetSelectedButton() {
+                try {
+                    if (!btnResetSelected) return;
+                    const sel = getResetTargetSelector();
+                    const has = !!sel && overrides.some(o => o && o.selector === sel);
+                    btnResetSelected.disabled = !has;
+                    btnResetSelected.title = has
+                        ? "Delete saved overrides for the selected element"
+                        : "Select an element with saved changes to enable";
+                } catch { }
+
+                // Also keep quick remove enabled/disabled in sync.
+                updateQuickRemoveButton();
+            }
+
+            function reapplyAllOverridesToFrame() {
+                // Apply overrides in a single message to reduce postMessage overhead.
+                try {
+                    const items = overrides
+                        .filter(o => o && o.selector)
+                        .map(o => ({ selector: o.selector, actions: o.actions || [] }));
+
+                    if (!items.length) return;
+
+                    const ok = postToFrame({ type: "uiedit:applyBatch", items });
+                    if (!ok) {
+                        // Fallback (older preview script)
+                        items.forEach(it => postToFrame({ type: "uiedit:apply", selector: it.selector, actions: it.actions }));
+                    }
+                } catch {
+                    // Fallback (best effort)
+                    overrides.forEach(o => {
+                        if (!o || !o.selector) return;
+                        postToFrame({ type: "uiedit:apply", selector: o.selector, actions: o.actions || [] });
+                    });
+                }
+            }
+
+            function reloadFrameAndReapply() {
+                if (!frame) return;
+                pendingReapplyAfterReload = true;
+                const base = initialFrameUrl || (frame.getAttribute("src") || "");
+                if (!base) return;
+                const sep = base.includes("?") ? "&" : "?";
+                frame.src = base + sep + "__uireload=" + Date.now();
+            }
+
+            async function copyTextToClipboard(text) {
+                const t = String(text || "");
+                if (!t) return false;
+                try {
+                    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+                        await navigator.clipboard.writeText(t);
+                        return true;
+                    }
+                } catch { }
+
+                // Fallback for older browsers / blocked clipboard API
+                try {
+                    const ta = document.createElement("textarea");
+                    ta.value = t;
+                    ta.style.position = "fixed";
+                    ta.style.left = "-9999px";
+                    ta.style.top = "-9999px";
+                    document.body.appendChild(ta);
+                    ta.focus();
+                    ta.select();
+                    const ok = document.execCommand("copy");
+                    document.body.removeChild(ta);
+                    return !!ok;
+                } catch {
+                    return false;
+                }
+            }
+
+            function findAndSelectInPreview(sel) {
+                const selector = String(sel || "").trim();
+                if (!selector) {
+                    setStatus("Find: provide a CSS selector.");
+                    return;
+                }
+
+                const ok = postToFrame({ type: "uiedit:selectBySelector", selector });
+                if (!ok) setStatus("Preview not ready. Try again.");
+                else setStatus("Finding in preview...");
+            }
+
+            function confirmResetAll() {
+                return window.confirm(
+                    "WARNING: Reset will delete ALL saved UI changes for this page (Theme + DOM overrides).\nThis action cannot be undone.\nContinue?"
+                );
+            }
+
+            function confirmResetSelected() {
+                return window.confirm(
+                    "WARNING: Reset selected will delete SAVED UI changes for the selected element.\nThis action cannot be undone.\nContinue?"
+                );
+            }
+
+            function clearInspectorUi() {
+                try {
+                    if (selSelector) selSelector.value = "";
+                    if (selClasses) selClasses.value = "";
+                    if (selBgRaw) selBgRaw.value = "";
+                    if (selTextColorRaw) selTextColorRaw.value = "";
+                    if (selText) selText.value = "";
+                    if (selClassAdd) selClassAdd.value = "";
+                    if (selTable) selTable.value = "";
+                    if (selCol) selCol.value = "";
+                    if (selImgSrc) selImgSrc.value = "";
+                    if (selImgAlt) selImgAlt.value = "";
+                    if (selImgClassAdd) selImgClassAdd.value = "";
+                    if (selImgWidth) selImgWidth.value = "";
+                    if (selImgWidthCustom) selImgWidthCustom.value = "";
+                    if (selImgHeight) selImgHeight.value = "";
+                    if (selImgHeightCustom) selImgHeightCustom.value = "";
+                    if (selImgAlign) selImgAlign.value = "";
+
+                    if (selInputType) selInputType.value = "text";
+                    if (chkInputRequired) chkInputRequired.checked = false;
+                    if (selInputPlaceholder) selInputPlaceholder.value = "";
+                    if (selInputValue) selInputValue.value = "";
+
+                    if (selInsertPos) selInsertPos.value = "after";
+                    if (selNewFieldKey) selNewFieldKey.value = "";
+                    if (selNewFieldLabel) selNewFieldLabel.value = "";
+                    if (selNewFieldType) selNewFieldType.value = "text";
+                    if (chkNewFieldRequired) chkNewFieldRequired.checked = false;
+                    if (selNewFieldPlaceholder) selNewFieldPlaceholder.value = "";
+                    if (selInsertHtml) selInsertHtml.value = "";
+
+                    if (selAddImgSrc) selAddImgSrc.value = "";
+                    if (selAddImgAlt) selAddImgAlt.value = "";
+                    if (selAddImgSize) selAddImgSize.value = "";
+                    if (selAddImgHeight) selAddImgHeight.value = "";
+                    if (selAddImgAlign) selAddImgAlign.value = "inline";
+                    if (selAddImgClassAdd) selAddImgClassAdd.value = "";
+                    if (fileAddImgUpload) fileAddImgUpload.value = "";
+                    if (addImgPreviewImg) {
+                        addImgPreviewImg.removeAttribute("src");
+                        addImgPreviewImg.style.cssText = "";
+                    }
+
+                    if (chkSetBg) chkSetBg.checked = false;
+                    if (chkSetTextColor) chkSetTextColor.checked = false;
+                } catch { }
+            }
+
+            function normalizeFieldKey(s) {
+                const raw = String(s || "").trim();
+                if (!raw) return "";
+                // Keep it HTML-id + name friendly.
+                return raw.toLowerCase().replace(/[^a-z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
+            }
+
+            function escapeHtmlAttr(s) {
+                return String(s ?? "")
+                    .replace(/&/g, "&amp;")
+                    .replace(/\"/g, "&quot;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;");
+            }
+
+            function normalizeSizeCss(raw, fallback) {
+                const v = String(raw || "").trim();
+                if (!v) return String(fallback || "");
+                if (/^\d+(?:\.\d+)?(px|em|rem|%)$/.test(v)) return v;
+                if (/^\d+(?:\.\d+)?$/.test(v)) return v + "px";
+                return String(fallback || "");
+            }
+
+            function buildImageHtml(src, alt, widthPxOrCss, heightPxOrCss, classAdd, align) {
+                const safeSrc = escapeHtmlAttr(src || "");
+                if (!safeSrc) return "";
+
+                const safeAlt = escapeHtmlAttr(alt || "");
+                const safeCls = String(classAdd || "").replace(/\"/g, "").trim();
+                const widthCss = normalizeSizeCss(widthPxOrCss, "");
+                const heightCss = normalizeSizeCss(heightPxOrCss, "");
+
+                const a = String(align || "inline").toLowerCase().trim();
+                let placementStyle = "display:inline-block;vertical-align:middle;";
+                if (a === "left") placementStyle = "display:block;margin-left:0;margin-right:auto;";
+                if (a === "center") placementStyle = "display:block;margin-left:auto;margin-right:auto;";
+                if (a === "right") placementStyle = "display:block;margin-left:auto;margin-right:0;";
+
+                let sizeStyle = "max-width:100%;";
+                if (widthCss) sizeStyle += `width:${widthCss};`;
+                if (heightCss) sizeStyle += `height:${heightCss};`;
+                if (!heightCss) sizeStyle += "height:auto;";
+
+                const style = ` style=\"${placementStyle}${sizeStyle}\"`;
+                const clsAttr = safeCls ? ` class=\"${escapeHtmlAttr(safeCls)}\"` : "";
+                const altAttr = ` alt=\"${safeAlt}\"`;
+
+                return `<img src=\"${safeSrc}\"${altAttr}${clsAttr}${style} />`;
+            }
+
+            function updateImgWidthCustomVisibility() {
+                try {
+                    if (!selImgWidthCustom) return;
+                    const show = String(selImgWidth?.value || "") === "custom";
+                    selImgWidthCustom.classList.toggle("hidden", !show);
+                } catch { }
+            }
+
+            function updateImgHeightCustomVisibility() {
+                try {
+                    if (!selImgHeightCustom) return;
+                    const show = String(selImgHeight?.value || "") === "custom";
+                    selImgHeightCustom.classList.toggle("hidden", !show);
+                } catch { }
+            }
+
+            function updateAddImagePreview() {
+                try {
+                    if (!addImgPreviewImg) return;
+
+                    const src = String(selAddImgSrc?.value || "").trim();
+                    if (!src) {
+                        addImgPreviewImg.removeAttribute("src");
+                        addImgPreviewImg.style.cssText = "";
+                        return;
+                    }
+
+                    const align = String(selAddImgAlign?.value || "inline").toLowerCase().trim();
+                    const sizeRaw = String(selAddImgSize?.value || "").trim();
+                    const widthCss = sizeRaw ? (String(sizeRaw).trim() + "px") : "";
+                    const heightRaw = String(selAddImgHeight?.value || "").trim();
+                    const heightCss = heightRaw ? (String(heightRaw).trim() + "px") : "";
+
+                    addImgPreviewImg.setAttribute("src", src);
+
+                    let placementStyle = "display:inline-block;vertical-align:middle;";
+                    if (align === "left") placementStyle = "display:block;margin-left:0;margin-right:auto;";
+                    if (align === "center") placementStyle = "display:block;margin-left:auto;margin-right:auto;";
+                    if (align === "right") placementStyle = "display:block;margin-left:auto;margin-right:0;";
+
+                    let sizeStyle = "max-width:100%;";
+                    if (widthCss) sizeStyle += `width:${widthCss};`;
+                    if (heightCss) sizeStyle += `height:${heightCss};`;
+                    if (!heightCss) sizeStyle += "height:auto;";
+                    addImgPreviewImg.style.cssText = placementStyle + sizeStyle;
+                } catch { }
+            }
+
+            function buildDefaultFieldHtml() {
+                const key = normalizeFieldKey(selNewFieldKey?.value);
+                if (!key) return "";
+
+                const label = String(selNewFieldLabel?.value || key).trim();
+                const type = String(selNewFieldType?.value || "text").trim();
+                const required = !!chkNewFieldRequired?.checked;
+                const ph = String(selNewFieldPlaceholder?.value || "");
+
+                const id = "dyn_" + key;
+                const reqAttr = required ? " required" : "";
+                const phAttr = ph ? ` placeholder=\"${escapeHtmlAttr(ph)}\"` : "";
+                const star = required ? "<span class=\"text-red-500\">*</span>" : "";
+
+                // Match Create/Edit User styling.
+                return (
+                    `<div class=\"space-y-1\">` +
+                    `<label for=\"${id}\" class=\"block text-sm font-medium text-slate-200\">` +
+                    `<span class=\"inline-flex items-center gap-2\">` +
+                    `<i class=\"fa-solid fa-pen\"></i>` +
+                    `<span>${escapeHtmlAttr(label)}</span>${star}` +
+                    `</span></label>` +
+                    `<input id=\"${id}\" name=\"dyn.${key}\" type=\"${escapeHtmlAttr(type)}\"${reqAttr}${phAttr} ` +
+                    `class=\"w-full rounded-lg border border-slate-500/50 bg-slate-800/40 px-3 py-2 text-slate-100 placeholder-slate-400 focus:border-brand focus:ring-brand focus:ring-1\" />` +
+                    `</div>`
+                );
+            }
+
+            function postToFrame(msg) {
+                try {
+                    if (!frame || !frame.contentWindow) return false;
+                    frame.contentWindow.postMessage(msg, "*");
+                    return true;
+                } catch {
+                    return false;
+                }
+            }
+
+            function requestMoveStep(direction) {
+                if (!currentSelector) { setStatus("No element selected."); return; }
+                if (currentMode !== "move") setMode("move");
+
+                const ok = postToFrame({ type: "uiedit:moveStep", direction: String(direction || "").toLowerCase() });
+                if (!ok) setStatus("Failed to send to preview (blocked)." );
+            }
+
+            function cssRgbToHex(s) {
+                const v = String(s || "").trim().toLowerCase();
+                if (!v) return "";
+                if (v === "transparent") return "";
+
+                // already hex
+                if (v[0] === "#") {
+                    if (v.length === 4) {
+                        return "#" + v[1] + v[1] + v[2] + v[2] + v[3] + v[3];
+                    }
+                    if (v.length === 7) return v;
+                }
+
+                const m = v.match(/^rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([0-9.]+))?\)$/);
+                if (!m) return "";
+
+                const r = Math.max(0, Math.min(255, parseInt(m[1], 10)));
+                const g = Math.max(0, Math.min(255, parseInt(m[2], 10)));
+                const b = Math.max(0, Math.min(255, parseInt(m[3], 10)));
+
+                const toHex = (n) => n.toString(16).padStart(2, "0");
+                return "#" + toHex(r) + toHex(g) + toHex(b);
+            }
+
+            function formatSelectOptions(opts) {
+                try {
+                    const rows = Array.isArray(opts) ? opts : [];
+                    return rows.map(o => {
+                        const v = (o && o.value !== undefined) ? String(o.value) : "";
+                        const t = (o && o.text !== undefined) ? String(o.text) : "";
+                        return t && t !== v ? (v + "|" + t) : v;
+                    }).join("\n");
+                } catch {
+                    return "";
+                }
+            }
+
+            window.addEventListener("message", (ev) => {
+                const msg = ev && ev.data;
+                if (!msg || !msg.type) return;
+
+                if (msg.type === "uiedit:iconCatalog") {
+                    try {
+                        const rows = Array.isArray(msg.classes) ? msg.classes : [];
+                        if (iconClassList) {
+                            iconClassList.innerHTML = "";
+                            rows.slice(0, 250).forEach(v => {
+                                const s = String(v || "").trim();
+                                if (!s) return;
+                                const opt = document.createElement("option");
+                                opt.value = s;
+                                iconClassList.appendChild(opt);
+                            });
+                        }
+                    } catch { }
+                    return;
+                }
+
+                if (msg.type === "uiedit:imageCatalog") {
+                    try {
+                        const rows = Array.isArray(msg.srcs) ? msg.srcs : [];
+                        if (iconImageList) {
+                            iconImageList.innerHTML = "";
+                            rows.slice(0, 250).forEach(v => {
+                                const s = String(v || "").trim();
+                                if (!s) return;
+                                const opt = document.createElement("option");
+                                opt.value = s;
+                                iconImageList.appendChild(opt);
+                            });
+                        }
+                    } catch { }
+                    return;
+                }
+
+                if (msg.type === "uiedit:movedAbs") {
+                    const sourceSelector = String(msg.sourceSelector || "").trim();
+                    const containerSelector = String(msg.containerSelector || "").trim();
+                    const left = Number(msg.left);
+                    const top = Number(msg.top);
+
+                    if (sourceSelector && containerSelector && Number.isFinite(left) && Number.isFinite(top)) {
+                        upsertMoveOverride(sourceSelector, {
+                            type: "moveAbs",
+                            containerSelector,
+                            left,
+                            top
+                        });
+
+                        currentSelector = sourceSelector;
+                        if (selSelector) selSelector.value = sourceSelector;
+                        setStatus("Moved locally (not saved yet)." );
+                    }
+                    return;
+                }
+
+                if (msg.type === "uiedit:moved") {
+                    const sourceSelector = String(msg.sourceSelector || "").trim();
+                    const containerSelector = String(msg.containerSelector || "").trim();
+                    const referenceSelector = String(msg.referenceSelector || "").trim();
+                    const position = String(msg.position || "after").trim();
+
+                    if (sourceSelector && containerSelector && referenceSelector) {
+                        upsertMoveOverride(sourceSelector, {
+                            type: "move",
+                            containerSelector,
+                            referenceSelector,
+                            position
+                        });
+
+                        // Keep inspector pointing to the moved element.
+                        currentSelector = sourceSelector;
+                        if (selSelector) selSelector.value = sourceSelector;
+                        setStatus("Moved locally (not saved yet)." );
+                    }
+                    return;
+                }
+
+                if (msg.type === "uiedit:imageTransformed") {
+                    const selector = String(msg.selector || "").trim();
+                    const styles = (msg.styles && typeof msg.styles === "object") ? msg.styles : null;
+
+                    if (selector && styles) {
+                        const map = {};
+                        try {
+                            Object.keys(styles).forEach(k => {
+                                const key = String(k || "").trim();
+                                if (!key) return;
+                                map[key] = String(styles[k] ?? "");
+                            });
+                        } catch { }
+
+                        upsertStyleActions(selector, map);
+
+                        currentSelector = selector;
+                        if (selSelector) selSelector.value = selector;
+                        setStatus("Image moved/resized locally (not saved yet)." );
+                    }
+                    return;
+                }
+
+                if (msg.type !== "uiedit:selected") return;
+
+                currentSelector = msg.selector || null;
+                currentKind = msg.kind || null;
+                currentInsertContainerSelector = msg.insertContainerSelector || null;
+                currentIconSelector = msg.iconTargetSelector || null;
+                updateModeButtonsVisibility(!!currentSelector, currentKind);
+
+                if (normalizeMode(currentKind)) {
+                    setMode(normalizeMode(currentKind));
+                }
+
+                // Keep current mode on selection (do not auto-switch).
+
+                if (selSelector) selSelector.value = msg.selector || "";
+                if (selText) selText.value = msg.text || "";
+
+                if (selClasses) selClasses.value = msg.className || "";
+                if (selIconClass) selIconClass.value = msg.className || "";
+
+                const bgEff = msg.bgEffective || msg.bg || "";
+                const fg = msg.color || "";
+
+                if (selBgRaw) selBgRaw.value = bgEff;
+                if (selTextColorRaw) selTextColorRaw.value = fg;
+
+                // Update color inputs if we can convert.
+                const bgHex = cssRgbToHex(bgEff);
+                if (bgHex && selBg) selBg.value = bgHex;
+
+                const fgHex = cssRgbToHex(fg);
+                if (fgHex && selTextColor) selTextColor.value = fgHex;
+
+                if (selTable) selTable.value = msg.tableSelector || "";
+                if (selCol) selCol.value = (typeof msg.colIndex === "number") ? String(msg.colIndex) : "";
+
+                if (selImgSrc) selImgSrc.value = msg.src || "";
+                if (selImgAlt) selImgAlt.value = msg.alt || "";
+
+                // INPUT details
+                if (selInputType && msg.inputType) {
+                    const v = String(msg.inputType || "").toLowerCase().trim();
+                    // Only set if this option exists, otherwise keep current.
+                    if ([...selInputType.options].some(o => o.value === v)) selInputType.value = v;
+                }
+                if (chkInputRequired) chkInputRequired.checked = !!msg.required;
+                if (selInputPlaceholder) selInputPlaceholder.value = msg.placeholder || "";
+                if (selInputValue) selInputValue.value = (msg.value === undefined || msg.value === null) ? "" : String(msg.value);
+
+                if (selSelectOptions) selSelectOptions.value = formatSelectOptions(msg.selectOptions);
+                if (selSelectValue) selSelectValue.value = String(msg.selectValue || "");
+
+                setStatus("Selected.");
+
+                updateResetSelectedButton();
+                updateImgWidthCustomVisibility();
+                updateImgHeightCustomVisibility();
+            });
+
+            function readFileAsDataUrl(file) {
+                return new Promise((resolve) => {
+                    try {
+                        if (!file) return resolve("");
+                        const r = new FileReader();
+                        r.onload = () => resolve(String(r.result || ""));
+                        r.onerror = () => resolve("");
+                        r.readAsDataURL(file);
+                    } catch {
+                        resolve("");
+                    }
+                });
+            }
+
+            async function hydrateAddImageSrcFromUpload() {
+                try {
+                    const file = (fileAddImgUpload && fileAddImgUpload.files && fileAddImgUpload.files.length)
+                        ? fileAddImgUpload.files[0]
+                        : null;
+                    if (!file) return "";
+                    const dataUrl = await readFileAsDataUrl(file);
+                    if (dataUrl && selAddImgSrc) selAddImgSrc.value = dataUrl;
+                    return dataUrl;
+                } catch {
+                    return "";
+                }
+            }
+
+            if (fileAddImgUpload) {
+                fileAddImgUpload.addEventListener("change", async () => {
+                    const dataUrl = await hydrateAddImageSrcFromUpload();
+                    if (dataUrl) setStatus("Picture loaded (not inserted yet)." );
+                    updateAddImagePreview();
+                });
+            }
+
+            if (selAddImgSrc) selAddImgSrc.addEventListener("input", () => updateAddImagePreview());
+            if (selAddImgSize) selAddImgSize.addEventListener("change", () => updateAddImagePreview());
+            if (selAddImgHeight) selAddImgHeight.addEventListener("change", () => updateAddImagePreview());
+            if (selAddImgAlign) selAddImgAlign.addEventListener("change", () => updateAddImagePreview());
+
+            if (btnAddImage) {
+                btnAddImage.addEventListener("click", async () => {
+                    if (!currentSelector) {
+                        setStatus("Select an element first (to choose where to insert)." );
+                        return;
+                    }
+
+                    // Prefer uploaded file if present, else use typed/pasted src.
+                    let src = String(selAddImgSrc?.value || "").trim();
+                    const file = (fileAddImgUpload && fileAddImgUpload.files && fileAddImgUpload.files.length)
+                        ? fileAddImgUpload.files[0]
+                        : null;
+                    if (file) {
+                        const dataUrl = await readFileAsDataUrl(file);
+                        if (dataUrl) src = dataUrl;
+                    }
+
+                    const alt = String(selAddImgAlt?.value || "").trim();
+                    const size = String(selAddImgSize?.value || "").trim();
+                    const height = String(selAddImgHeight?.value || "").trim();
+                    const cls = String(selAddImgClassAdd?.value || "").trim();
+
+                    const align = String(selAddImgAlign?.value || "inline").trim();
+
+                    const html = buildImageHtml(src, alt, size, height, cls, align);
+                    if (!html) {
+                        setStatus("ADD picture: provide a src or upload an image." );
+                        return;
+                    }
+
+                    // Route through existing ADD apply logic.
+                    if (selInsertHtml) selInsertHtml.value = html;
+                    setStep("edit");
+                    setMode("add");
+                    if (btnApply) btnApply.click();
+                });
+            }
+
+            if (btnApply) {
+                btnApply.addEventListener("click", async () => {
+                    if (!currentSelector) { setStatus("No element selected."); return; }
+
+                    if (currentMode === "move") {
+                        setStatus("MOVE: drag & drop inside the preview (then Save).");
+                        return;
+                    }
+
+                    const actions = [];
+
+                    // For ADD mode we may need to target a container instead of a void element (e.g. input/img).
+                    // This enables "append" (move to end) to work even if the selected element can't contain children.
+                    let effectiveSelector = currentSelector;
+
+                    if (currentMode === "table") {
+                        setStatus("Use Table tools for table changes.");
+                        return;
+                    }
+
+                    if (currentMode === "icon") {
+                        const iconSel = String(currentIconSelector || currentSelector || "").trim();
+                        if (!iconSel) {
+                            setStatus("ICON: select an element.");
+                            return;
+                        }
+
+                        // 1) Upload icon image
+                        const file = (fileIconUpload && fileIconUpload.files && fileIconUpload.files.length)
+                            ? fileIconUpload.files[0]
+                            : null;
+                        if (file) {
+                            const dataUrl = await readFileAsDataUrl(file);
+                            if (!dataUrl) {
+                                setStatus("ICON: upload failed.");
+                                return;
+                            }
+
+                            const sizeCss = normalizeSizeCss(selIconImgSize?.value, "1em");
+
+                            actions.push({ type: "attr", name: "src", value: dataUrl });
+                            actions.push({ type: "style", name: "backgroundImage", value: `url(\"${dataUrl}\")` });
+                            actions.push({ type: "style", name: "backgroundRepeat", value: "no-repeat" });
+                            actions.push({ type: "style", name: "backgroundSize", value: "contain" });
+                            actions.push({ type: "style", name: "backgroundPosition", value: "center" });
+                            actions.push({ type: "style", name: "display", value: "inline-block" });
+                            actions.push({ type: "style", name: "width", value: sizeCss });
+                            actions.push({ type: "style", name: "height", value: sizeCss });
+                            actions.push({ type: "style", name: "lineHeight", value: sizeCss });
+                            actions.push({ type: "style", name: "color", value: "transparent" });
+
+                            upsertOverride(iconSel, actions);
+                            const ok = postToFrame({ type: "uiedit:apply", selector: iconSel, actions });
+                            setStatus(ok ? "ICON image applied (not saved yet)." : "Iframe not ready. Try again.");
+                            return;
+                        }
+
+                        // 2) Pick an existing image URL
+                        const pickedSrc = String(selIconImageSrc?.value || "").trim();
+                        if (pickedSrc) {
+                            const sizeCss = normalizeSizeCss(selIconImgSize?.value, "1em");
+                            actions.push({ type: "attr", name: "src", value: pickedSrc });
+                            actions.push({ type: "style", name: "backgroundImage", value: `url(\"${pickedSrc}\")` });
+                            actions.push({ type: "style", name: "backgroundRepeat", value: "no-repeat" });
+                            actions.push({ type: "style", name: "backgroundSize", value: "contain" });
+                            actions.push({ type: "style", name: "backgroundPosition", value: "center" });
+                            actions.push({ type: "style", name: "display", value: "inline-block" });
+                            actions.push({ type: "style", name: "width", value: sizeCss });
+                            actions.push({ type: "style", name: "height", value: sizeCss });
+                            actions.push({ type: "style", name: "lineHeight", value: sizeCss });
+                            actions.push({ type: "style", name: "color", value: "transparent" });
+
+                            upsertOverride(iconSel, actions);
+                            const ok = postToFrame({ type: "uiedit:apply", selector: iconSel, actions });
+                            setStatus(ok ? "ICON image applied (not saved yet)." : "Iframe not ready. Try again.");
+                            return;
+                        }
+
+                        // 3) Class-based icons
+                        const cls = String(selIconClass?.value || "").trim();
+                        if (!cls) {
+                            setStatus("ICON: pick an image or provide class names.");
+                            return;
+                        }
+
+                        actions.push({ type: "classSet", value: cls });
+                        upsertOverride(iconSel, actions);
+                        const ok = postToFrame({ type: "uiedit:apply", selector: iconSel, actions });
+                        setStatus(ok ? "ICON updated (not saved yet)." : "Iframe not ready. Try again.");
+                        return;
+                    }
+
+                    if (currentMode === "select") {
+                        const raw = String(selSelectOptions?.value || "");
+                        const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                        const options = lines.map(line => {
+                            const parts = line.split("|");
+                            const value = (parts[0] || "").trim();
+                            const text = (parts[1] || "").trim();
+                            return { value, text: text || value };
+                        });
+
+                        const selectedRaw = String(selSelectValue?.value || "").trim();
+
+                        if (!options.length && !selectedRaw) {
+                            setStatus("SELECT: provide options or selected value.");
+                            return;
+                        }
+
+                        if (options.length) actions.push({ type: "selectOptions", options });
+                        if (selectedRaw) actions.push({ type: "selectValue", value: selectedRaw });
+
+                        upsertOverride(currentSelector, actions);
+                        const ok = postToFrame({ type: "uiedit:apply", selector: currentSelector, actions });
+                        if (!ok) setStatus("Failed to send to preview (blocked)." );
+                        else setStatus("SELECT updated (not saved yet).");
+                        return;
+                    }
+
+                    if (currentMode === "add") {
+                        const pos = (selInsertPos?.value || "after").trim();
+                        const custom = String(selInsertHtml?.value || "");
+                        const html = custom.trim() ? custom : buildDefaultFieldHtml();
+
+                        if (!String(html || "").trim()) {
+                            setStatus("ADD: provide Field key or Custom HTML.");
+                            return;
+                        }
+
+                        const posNorm = String(pos || "").toLowerCase();
+                        if (posNorm === "append" || posNorm === "prepend") {
+                            effectiveSelector = (currentInsertContainerSelector || currentSelector);
+                        }
+
+                        actions.push({ type: "insertHtml", position: pos, html: String(html) });
+                    } else if (currentMode === "image") {
+                        const src = (selImgSrc?.value || "").trim();
+                        const alt = (selImgAlt?.value || "").trim();
+                        const cls = (selImgClassAdd?.value || "").trim();
+
+                        if (src) actions.push({ type: "attr", name: "src", value: src });
+                        if (alt) actions.push({ type: "attr", name: "alt", value: alt });
+                        if (cls) actions.push({ type: "classAdd", value: cls });
+
+                        // Optional placement controls
+                        const wSel = String(selImgWidth?.value || "").trim();
+                        let widthCss = "";
+                        if (wSel && wSel !== "custom") widthCss = wSel;
+                        if (wSel === "custom") {
+                            const n = String(selImgWidthCustom?.value || "").trim();
+                            widthCss = normalizeSizeCss(n, "");
+                        }
+
+                        const hSel = String(selImgHeight?.value || "").trim();
+                        let heightCss = "";
+                        if (hSel && hSel !== "custom") heightCss = hSel;
+                        if (hSel === "custom") {
+                            const n = String(selImgHeightCustom?.value || "").trim();
+                            heightCss = normalizeSizeCss(n, "");
+                        }
+
+                        if (widthCss) {
+                            actions.push({ type: "style", name: "width", value: widthCss });
+                            actions.push({ type: "style", name: "maxWidth", value: "100%" });
+                        }
+
+                        if (heightCss) {
+                            actions.push({ type: "style", name: "height", value: heightCss });
+                        } else if (widthCss) {
+                            // If only width is set, keep aspect ratio.
+                            actions.push({ type: "style", name: "height", value: "auto" });
+                        }
+
+                        const align = String(selImgAlign?.value || "").trim().toLowerCase();
+                        if (align) {
+                            if (align === "inline") {
+                                actions.push({ type: "style", name: "display", value: "inline-block" });
+                                actions.push({ type: "style", name: "verticalAlign", value: "middle" });
+                                actions.push({ type: "style", name: "marginLeft", value: "" });
+                                actions.push({ type: "style", name: "marginRight", value: "" });
+                            } else if (align === "left") {
+                                actions.push({ type: "style", name: "display", value: "block" });
+                                actions.push({ type: "style", name: "marginLeft", value: "0" });
+                                actions.push({ type: "style", name: "marginRight", value: "auto" });
+                            } else if (align === "center") {
+                                actions.push({ type: "style", name: "display", value: "block" });
+                                actions.push({ type: "style", name: "marginLeft", value: "auto" });
+                                actions.push({ type: "style", name: "marginRight", value: "auto" });
+                            } else if (align === "right") {
+                                actions.push({ type: "style", name: "display", value: "block" });
+                                actions.push({ type: "style", name: "marginLeft", value: "auto" });
+                                actions.push({ type: "style", name: "marginRight", value: "0" });
+                            }
+                        }
+                    } else if (currentMode === "input") {
+                        const t = (selInputType?.value || "").trim();
+                        if (t) actions.push({ type: "attr", name: "type", value: t });
+
+                        // placeholder: empty string removes attribute
+                        const ph = (selInputPlaceholder?.value || "");
+                        actions.push({ type: "attr", name: "placeholder", value: String(ph) });
+
+                        // value: use a dedicated action to set element.value
+                        const v = (selInputValue?.value || "");
+                        actions.push({ type: "value", value: String(v) });
+
+                        // required: only apply when explicitly requested
+                        if (chkInputRequired?.checked) {
+                            actions.push({ type: "attr", name: "required", value: "required" });
+                        } else {
+                            // Remove required if unchecked (explicit)
+                            actions.push({ type: "attr", name: "required", value: "" });
+                        }
+                    } else {
+                        // text/tab
+                        actions.push({ type: "text", value: selText?.value ?? "" });
+
+                        // IMPORTANT: color pickers always have a value, so only apply when explicitly requested.
+                        if (chkSetBg?.checked) {
+                            const bg = selBg?.value;
+                            if (bg) actions.push({ type: "style", name: "backgroundColor", value: bg });
+                        }
+
+                        if (chkSetTextColor?.checked) {
+                            const c = selTextColor?.value;
+                            if (c) actions.push({ type: "style", name: "color", value: c });
+                        }
+
+                        const cls = (selClassAdd?.value || "").trim();
+                        if (cls) actions.push({ type: "classAdd", value: cls });
+                    }
+
+                    upsertOverride(effectiveSelector, actions);
+
+                    const ok = postToFrame({ type: "uiedit:apply", selector: effectiveSelector, actions });
+                    setStatus(ok ? "Applied locally (not saved yet)." : "Iframe not ready. Try again.");
+                });
+            }
+
+            if (selImgWidth) {
+                selImgWidth.addEventListener("change", () => updateImgWidthCustomVisibility());
+            }
+
+            if (selImgHeight) {
+                selImgHeight.addEventListener("change", () => updateImgHeightCustomVisibility());
+            }
+
+            if (btnHideCol) {
+                btnHideCol.addEventListener("click", () => {
+                    const tableSel = (selTable?.value || "").trim();
+                    const colIndex = Number(selCol?.value);
+
+                    if (!tableSel || !Number.isFinite(colIndex)) {
+                        setStatus("Select a table header/cell first (so table + column are known).");
+                        return;
+                    }
+
+                    const actions = [{ type: "tableColHide", colIndex }];
+                    upsertOverride(tableSel, actions);
+
+                    const ok = postToFrame({ type: "uiedit:apply", selector: tableSel, actions });
+                    setStatus(ok ? "Column hidden locally (not saved yet)." : "Iframe not ready. Try again.");
+                });
+            }
+
+            if (btnResetSelected) {
+                btnResetSelected.addEventListener("click", () => {
+                    const sel = getResetTargetSelector();
+                    if (!sel) { setStatus("No element selected."); return; }
+
+                    const idx = overrides.findIndex(o => o && o.selector === sel);
+                    if (idx < 0) { setStatus("No saved changes for selected."); return; }
+
+                    if (!confirmResetSelected()) {
+                        setStatus("Reset canceled.");
+                        return;
+                    }
+
+                    (async () => {
+                        setStatus("Resetting selected...");
+
+                        const url = "@Url.Page("/UiCustomization/Editor", "ResetSelected")";
+                        const token = getAntiForgeryToken();
+                        const payload = {
+                            pageKey: effectivePageKey,
+                            featureKey,
+                            returnPath,
+                            selector: sel
+                        };
+
+                        try {
+                            const resp = await fetch(url, {
+                                method: "POST",
+                                credentials: "same-origin",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "RequestVerificationToken": token,
+                                    "X-UIEditor-Debug": "1"
+                                },
+                                body: JSON.stringify(payload)
+                            });
+
+                            const data = await resp.json().catch(async () => {
+                                const t = await resp.text();
+                                const shortText = (t || "").replace(/\s+/g, " ").slice(0, 220);
+                                return { ok: false, error: shortText ? (shortText + "…") : "Non-JSON response." };
+                            });
+
+                            if (!resp.ok || !data || data.ok !== true) {
+                                setStatus("Reset selected failed: HTTP " + resp.status + " :: " + (data?.error ?? "unknown"));
+                                return;
+                            }
+
+                            overrides.splice(idx, 1);
+                            updateResetSelectedButton();
+
+                            // We can't reliably undo arbitrary DOM mutations, so reload the iframe and reapply remaining overrides.
+                            setStatus("Reset selected. Reloading preview...");
+                            reloadFrameAndReapply();
+                        } catch {
+                            setStatus("Reset selected failed: network error.");
+                        }
+                    })();
+                });
+            }
+
+            if (btnSave) {
+                btnSave.addEventListener("click", async () => {
+                    setStatus("Saving...");
+
+                    const saveUrl = "@Url.Page("/UiCustomization/Editor", "Save")";
+                    const token = getAntiForgeryToken();
+                    dbg("Save click", {
+                        href: String(location.href || ""),
+                        origin: String(location.origin || ""),
+                        protocol: String(location.protocol || ""),
+                        saveUrl,
+                        online: navigator.onLine,
+                        tokenPresent: !!token,
+                        tokenLen: token ? token.length : 0,
+                        mode: (typeof currentMode !== 'undefined') ? currentMode : null,
+                        selector: currentSelector
+                    });
+
+                    const payload = {
+                        pageKey: effectivePageKey,
+                        featureKey,
+                        returnPath,
+                        dom: { overrides }
+                    };
+
+                    let bodyJson = "";
+                    try {
+                        bodyJson = JSON.stringify(payload);
+                        dbg("Payload size", { bytes: bodyJson.length });
+                    } catch (e) {
+                        dbg("Payload stringify failed", e);
+                        setStatus("Save failed: payload serialize error.");
+                        return;
+                    }
+
+                    try {
+                        // Add a timeout so we can distinguish hang vs immediate failure.
+                        const ac = new AbortController();
+                        const t = setTimeout(() => ac.abort(), 12000);
+
+                        const resp = await fetch(saveUrl, {
+                            method: "POST",
+                            credentials: "same-origin",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "RequestVerificationToken": token,
+                                "X-UIEditor-Debug": "1"
+                            },
+                            body: bodyJson,
+                            signal: ac.signal
+                        });
+
+                        clearTimeout(t);
+                        dbg("Save response", {
+                            ok: resp.ok,
+                            status: resp.status,
+                            url: resp.url,
+                            redirected: resp.redirected,
+                            type: resp.type
+                        });
+
+                        const data = await resp.json().catch(async () => {
+                            const t = await resp.text();
+                            dbg("Save non-JSON response", { status: resp.status, text: (t || "").slice(0, 1000) });
+                            return { ok: false, error: t };
+                        });
+
+                        if (!resp.ok || !data || data.ok !== true) {
+                            dbg("Save failed payload", data);
+                            try { console.error("[UIEditor] Save failed", { status: resp.status, data }); } catch { }
+                            setStatus("Save failed: HTTP " + resp.status + " :: " + (data?.error ?? "unknown"));
+                            return;
+                        }
+
+                        setStatus("Saved. Redirecting...");
+
+                        const target = (data && data.returnPath) ? String(data.returnPath) : String(returnPath);
+                        const sep = target.includes("?") ? "&" : "?";
+                        // Force a full reload so the user immediately sees server-applied overrides.
+                        window.location.replace(target + sep + "__uireload=" + Date.now());
+                    } catch (e) {
+                        const err = e || {};
+                        dbg("Save fetch threw", {
+                            name: err.name,
+                            message: err.message,
+                            stack: err.stack
+                        });
+
+                        // Quick reachability check
+                        try {
+                            const h = await fetch("/healthz", { cache: "no-store" });
+                            dbg("healthz", { ok: h.ok, status: h.status, url: h.url });
+                        } catch (e2) {
+                            const er2 = e2 || {};
+                            dbg("healthz fetch threw", { name: er2.name, message: er2.message });
+                        }
+
+                        setStatus("Save failed: network error.");
+                    }
+                });
+            }
+
+            if (btnReset) {
+                btnReset.addEventListener("click", async () => {
+                    if (!confirmResetAll()) {
+                        setStatus("Reset canceled.");
+                        return;
+                    }
+
+                    setStatus("Resetting...");
+
+                    const url = "@Url.Page("/UiCustomization/Editor", "Reset")";
+                    const token = getAntiForgeryToken();
+                    const payload = {
+                        pageKey: effectivePageKey,
+                        returnPath
+                    };
+
+                    try {
+                        const resp = await fetch(url, {
+                            method: "POST",
+                            credentials: "same-origin",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "RequestVerificationToken": token,
+                                "X-UIEditor-Debug": "1"
+                            },
+                            body: JSON.stringify(payload)
+                        });
+
+                        const data = await resp.json().catch(async () => {
+                            const t = await resp.text();
+                            const shortText = (t || "").replace(/\s+/g, " ").slice(0, 220);
+                            return { ok: false, error: shortText ? (shortText + "…") : "Non-JSON response." };
+                        });
+
+                        if (!resp.ok || !data || data.ok !== true) {
+                            setStatus("Reset failed: HTTP " + resp.status + " :: " + (data?.error ?? "unknown"));
+                            return;
+                        }
+
+                        // Clear local state, then hard-refresh the target page without changes.
+                        overrides.length = 0;
+                        currentSelector = null;
+                        currentKind = null;
+                        currentInsertContainerSelector = null;
+                        clearInspectorUi();
+                        updateResetSelectedButton();
+                        updateModeButtonsVisibility(false, null);
+
+                        const target = (data && data.returnPath) ? String(data.returnPath) : returnPath;
+                        const sep = target.includes("?") ? "&" : "?";
+                        window.location.replace(target + sep + "__uireload=" + Date.now());
+                    } catch {
+                        setStatus("Reset failed: network error.");
+                    }
+                });
+            }
+
+            if (frame) {
+                frame.addEventListener("load", () => {
+                    if (pendingReapplyAfterReload) {
+                        pendingReapplyAfterReload = false;
+                        // Let the iframe initialize its message listener first.
+                        setTimeout(() => {
+                            reapplyAllOverridesToFrame();
+                            postToFrame({ type: "uiedit:setMode", mode: currentMode });
+                            setStatus("Preview reloaded. Click an element to select.");
+                        }, 50);
+                        return;
+                    }
+                    postToFrame({ type: "uiedit:setMode", mode: currentMode });
+                    setStatus("Preview loaded. Click an element to select.");
+                });
+            }
+
+            // Initial button state
+            updateResetSelectedButton();
+            updateUndoButton();
+            updateRedoButton();
+        })();
+    </script>
+}

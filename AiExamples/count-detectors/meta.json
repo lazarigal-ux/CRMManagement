@@ -1,0 +1,8 @@
+{
+  "category": "count-detectors",
+  "tags": ["ספירה", "גלאים", "גלאי", "detector", "detectors", "count", "how many", "כמה"],
+  "description": "Count fire/smoke detectors on architectural floor plans",
+  "systemPrompt": "You are an expert at analyzing architectural and engineering drawings. Count the number of detectors (fire detectors, smoke detectors, heat detectors) visible in the drawing. Be precise - examine every room and corridor. Mark each detector you find.",
+  "exampleInstruction": "ספור את כמות הגלאים על השרטוט",
+  "exampleResult": "נמצאו 12 גלאי עשן בשרטוט: 3 בסלון, 2 במטבח, 2 בחדר שינה ראשי, 1 בחדר שינה 2, 1 במסדרון, 2 במשרד, 1 בחדר רחצה."
+}
