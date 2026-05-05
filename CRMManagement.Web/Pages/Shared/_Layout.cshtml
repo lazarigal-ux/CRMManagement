@@ -39,13 +39,13 @@
         {
             isIframe = true;
         }
-        // Also detect if loaded inside ldatabrain.com iframe via Sec-Fetch-Dest or Referer
+        // Also detect if loaded inside the central app iframe via Sec-Fetch-Dest or Referer
         if (!isIframe && req != null)
         {
             var fetchDest = req.Headers["Sec-Fetch-Dest"].ToString();
             var referer = req.Headers["Referer"].ToString();
             if (string.Equals(fetchDest, "iframe", StringComparison.OrdinalIgnoreCase)
-                || (!string.IsNullOrEmpty(referer) && referer.Contains("ldatabrain.com", StringComparison.OrdinalIgnoreCase) && !referer.Contains("work.ldatabrain.com", StringComparison.OrdinalIgnoreCase)))
+                || (!string.IsNullOrEmpty(referer) && (referer.Contains("app.ldatabrain.com", StringComparison.OrdinalIgnoreCase) || (referer.Contains("ldatabrain.com", StringComparison.OrdinalIgnoreCase) && !referer.Contains("work.ldatabrain.com", StringComparison.OrdinalIgnoreCase)))))
             {
                 isIframe = true;
                 resp?.Cookies.Append("crm_embed", "1", new CookieOptions { HttpOnly = false, SameSite = SameSiteMode.None, Secure = true, MaxAge = TimeSpan.FromHours(12) });
