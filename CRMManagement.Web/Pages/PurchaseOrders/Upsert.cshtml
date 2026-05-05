@@ -1,0 +1,95 @@
+@page "{id:guid?}"
+@model CRMManagement.Web.Pages.PurchaseOrders.UpsertModel
+@{
+    var isEdit = Model.Input.Id is not null;
+    ViewData["Title"] = isEdit ? "Edit Purchase Order" : "New Purchase Order";
+}
+
+<section class="p-4 space-y-4 text-slate-200 max-w-4xl">
+    <div>
+        <a asp-page="/PurchaseOrders/Index" class="text-xs text-slate-400 hover:underline"><i class="fa-solid fa-arrow-left text-[10px]"></i> Back to Purchase Orders</a>
+        <h1 class="text-2xl font-semibold text-slate-100 mt-1">@(isEdit ? "Edit Purchase Order" : "New Purchase Order")</h1>
+    </div>
+
+    <form method="post" class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 space-y-4">
+        <div asp-validation-summary="ModelOnly" class="text-sm text-rose-300"></div>
+        <input type="hidden" asp-for="Input.Id" />
+        <input type="hidden" asp-for="Input.VendorId" />
+        <input type="hidden" asp-for="Input.OwnerUserId" />
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <label class="block">
+                <span class="text-xs text-slate-400">PO Number <span class="text-rose-400">*</span></span>
+                <input asp-for="Input.PoNumber" required class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2 font-mono" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">Status</span>
+                <input asp-for="Input.Status" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="block md:col-span-2">
+                <span class="text-xs text-slate-400">Subject <span class="text-rose-400">*</span></span>
+                <input asp-for="Input.Subject" required class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">PO Date</span>
+                <input asp-for="Input.PoDate" type="date" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">Due Date</span>
+                <input asp-for="Input.DueDate" type="date" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">Carrier</span>
+                <input asp-for="Input.CarrierName" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">Currency</span>
+                <input asp-for="Input.Currency" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+
+            <label class="block">
+                <span class="text-xs text-slate-400">Subtotal</span>
+                <input asp-for="Input.Subtotal" type="number" step="0.01" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2 font-mono" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">Discount</span>
+                <input asp-for="Input.Discount" type="number" step="0.01" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2 font-mono" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">Tax</span>
+                <input asp-for="Input.Tax" type="number" step="0.01" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2 font-mono" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">Adjustment</span>
+                <input asp-for="Input.AdjustmentAmount" type="number" step="0.01" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2 font-mono" />
+            </label>
+            <label class="block md:col-span-2">
+                <span class="text-xs text-slate-400">Total</span>
+                <input asp-for="Input.Total" type="number" step="0.01" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2 font-mono" />
+            </label>
+
+            <label class="block md:col-span-2">
+                <span class="text-xs text-slate-400">Description</span>
+                <textarea asp-for="Input.Description" rows="3" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2"></textarea>
+            </label>
+            <label class="block md:col-span-2">
+                <span class="text-xs text-slate-400">Billing Address</span>
+                <textarea asp-for="Input.BillingAddress" rows="3" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2"></textarea>
+            </label>
+            <label class="block md:col-span-2">
+                <span class="text-xs text-slate-400">Shipping Address</span>
+                <textarea asp-for="Input.ShippingAddress" rows="3" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2"></textarea>
+            </label>
+            <label class="block md:col-span-2">
+                <span class="text-xs text-slate-400">Terms &amp; Conditions</span>
+                <textarea asp-for="Input.TermsAndConditions" rows="3" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2"></textarea>
+            </label>
+        </div>
+
+        <div class="flex justify-end gap-2">
+            <a asp-page="/PurchaseOrders/Index" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm">Cancel</a>
+            <button type="submit" class="px-4 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-sm">@(isEdit ? "Save" : "Create")</button>
+        </div>
+    </form>
+</section>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

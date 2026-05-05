@@ -1,0 +1,41 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio / VS Code user state
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+
+# Test and coverage output
+TestResults/
+coverage/
+coverage.*
+*.coverage
+*.coveragexml
+
+# Logs and diagnostics
+*.log
+logs/
+qa-logs/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+secrets.json
+appsettings.Local.json
+appsettings.*.local.json
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Docker / publish artifacts
+publish/
+out/

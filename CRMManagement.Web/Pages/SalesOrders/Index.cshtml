@@ -1,0 +1,88 @@
+@page
+@model CRMManagement.Web.Pages.SalesOrders.IndexModel
+@{ ViewData["Title"] = "Sales Orders"; }
+
+<section class="p-4 space-y-4 text-slate-200">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-100">Sales Orders</h1>
+            <p class="text-xs text-slate-400 mt-1">Confirmed customer orders. Synced from Zoho's <code class="text-sky-300">Sales_Orders</code> module.</p>
+        </div>
+    </div>
+
+    <form method="get" class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-3 flex flex-wrap items-end gap-3">
+        <div class="flex-1 min-w-[12rem]">
+            <label class="block text-xs text-slate-400 mb-1">Search</label>
+            <input name="Search" value="@Model.Search" placeholder="order number / subject"
+                   class="w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-1.5 text-sm" />
+        </div>
+        <div class="min-w-[10rem]">
+            <label class="block text-xs text-slate-400 mb-1">Status</label>
+            <input name="Status" value="@Model.Status" placeholder="Created / Approved / Shipped"
+                   class="w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-1.5 text-sm" />
+        </div>
+        <button type="submit" class="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-sm">Search</button>
+        <a asp-page="/SalesOrders/Index" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm">Reset</a>
+    </form>
+
+    <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 overflow-hidden">
+        <table data-cm-table="sales-orders" class="min-w-full text-sm">
+            <thead class="text-xs text-slate-400 uppercase bg-slate-900/40">
+                <tr>
+                    <th class="text-left px-3 py-2">SO #</th>
+                    <th class="text-left px-3 py-2">Subject</th>
+                    <th class="text-left px-3 py-2">Status</th>
+                    <th class="text-right px-3 py-2">Total</th>
+                    <th class="text-left px-3 py-2">Order Date</th>
+                    @* Extra Zoho fields — default-hidden, surfaced via the "Columns" picker *@
+                    <th class="text-left px-3 py-2"  data-cm-default-hide="1">Account</th>
+                    <th class="text-left px-3 py-2"  data-cm-default-hide="1">Opportunity</th>
+                    <th class="text-left px-3 py-2"  data-cm-default-hide="1">Quote #</th>
+                    <th class="text-right px-3 py-2" data-cm-default-hide="1">Subtotal</th>
+                    <th class="text-right px-3 py-2" data-cm-default-hide="1">Discount</th>
+                    <th class="text-right px-3 py-2" data-cm-default-hide="1">Tax</th>
+                    <th class="text-left px-3 py-2"  data-cm-default-hide="1">Notes</th>
+                    <th class="text-left px-3 py-2"  data-cm-default-hide="1">Owner</th>
+                    <th class="text-left px-3 py-2"  data-cm-default-hide="1">Created (Zoho)</th>
+                    <th class="text-left px-3 py-2"  data-cm-default-hide="1">Modified (Zoho)</th>
+                    <th class="px-3 py-2"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700/40">
+                @if (Model.Items.Count == 0)
+                {
+                    <tr><td colspan="16" class="px-3 py-6 text-center text-slate-400">No sales orders found.</td></tr>
+                }
+                @foreach (var o in Model.Items)
+                {
+                    var soSubtotal = o.Subtotal.HasValue ? o.Subtotal.Value.ToString("N2") : "—";
+                    var soDiscount = o.Discount.HasValue ? o.Discount.Value.ToString("N2") : "—";
+                    var soTax      = o.Tax.HasValue ? o.Tax.Value.ToString("N2") : "—";
+                    var soNotes    = string.IsNullOrWhiteSpace(o.Notes) ? "—" : (o.Notes!.Length > 80 ? o.Notes.Substring(0, 80) + "…" : o.Notes);
+                    var soZCreated = o.ZohoCreatedTime?.ToString("yyyy-MM-dd HH:mm") ?? "—";
+                    var soZMod     = o.ZohoModifiedTime?.ToString("yyyy-MM-dd HH:mm") ?? "—";
+                    <tr class="hover:bg-slate-700/30">
+                        <td class="px-3 py-2 font-medium text-slate-100">@o.OrderNumber</td>
+                        <td class="px-3 py-2 text-slate-300">@(string.IsNullOrEmpty(o.Subject) ? "—" : o.Subject)</td>
+                        <td class="px-3 py-2 text-slate-300">@o.Status</td>
+                        <td class="px-3 py-2 text-right text-slate-100 whitespace-nowrap">@o.Total.ToString("N2") @o.Currency</td>
+                        <td class="px-3 py-2 text-slate-400 whitespace-nowrap">@o.OrderDate.ToString("yyyy-MM-dd")</td>
+                        <td class="px-3 py-2 text-slate-300">@(o.AccountName ?? "—")</td>
+                        <td class="px-3 py-2 text-slate-300">@(o.OpportunityName ?? "—")</td>
+                        <td class="px-3 py-2 text-slate-300">@(o.QuoteNumber ?? "—")</td>
+                        <td class="px-3 py-2 text-right text-slate-300 whitespace-nowrap">@soSubtotal</td>
+                        <td class="px-3 py-2 text-right text-slate-300 whitespace-nowrap">@soDiscount</td>
+                        <td class="px-3 py-2 text-right text-slate-300 whitespace-nowrap">@soTax</td>
+                        <td class="px-3 py-2 text-slate-300" title="@(o.Notes ?? "")">@soNotes</td>
+                        <td class="px-3 py-2 text-slate-300">@(o.OwnerName ?? "—")</td>
+                        <td class="px-3 py-2 text-slate-400 whitespace-nowrap">@soZCreated</td>
+                        <td class="px-3 py-2 text-slate-400 whitespace-nowrap">@soZMod</td>
+                        <td class="px-3 py-2 text-right">
+                            <a asp-page="/SalesOrders/Details" asp-route-id="@o.Id" class="text-xs text-sky-300 hover:underline">Details</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

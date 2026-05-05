@@ -1,0 +1,420 @@
+@* Top bar + bridge script *@
+
+@{
+    var isIframe = (ViewData["IsIframe"] as bool?) == true;
+    var isAuthed = Context?.User?.Identity?.IsAuthenticated == true;
+    var userName = (Context?.User?.Identity?.Name ?? "").Trim();
+    var currentPath = (Context?.Request?.Path.Value ?? "/");
+    var uiEditorPath = Uri.EscapeDataString(currentPath);
+}
+
+@if (!isIframe)
+{
+    <header class="app-topbar sticky top-0 z-50 border-b border-slate-600/50 bg-slate-700/80 text-slate-100 backdrop-blur" data-topbar>
+        <div class="h-16 px-4 flex items-center gap-3">
+            <button type="button"
+                    id="sidebar-toggle"
+                    class="app-icon-button inline-flex items-center justify-center rounded-xl border border-slate-500/60 bg-transparent w-10 h-10 hover:bg-slate-600"
+                    title="Toggle sidebar"
+                    aria-label="Toggle sidebar">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <a asp-page="/Home/Index" class="inline-flex items-center gap-2 rounded-xl px-2 py-1 hover:bg-slate-600" title="Home">
+                <span class="text-sm font-semibold tracking-tight">Work Management</span>
+            </a>
+
+            <a href="/UiCustomization/Editor?path=@uiEditorPath"
+               class="app-icon-button inline-flex items-center justify-center rounded-xl border border-slate-500/60 bg-transparent w-10 h-10 shrink-0 hover:bg-slate-600 text-slate-300"
+               title="UI Editor">
+                <i class="fa-solid fa-pen-to-square text-sm"></i>
+            </a>
+
+            <button type="button"
+                    id="theme-toggle"
+                    aria-label="Toggle theme"
+                    aria-pressed="true"
+                    class="app-icon-button inline-flex items-center justify-center rounded-xl border border-slate-500/60 bg-transparent w-10 h-10 shrink-0 hover:bg-slate-600 text-slate-300"
+                    title="Toggle theme">
+                <i class="fa-solid fa-sun text-sm" data-theme-icon="light" aria-hidden="true"></i>
+                <i class="fa-solid fa-moon text-sm" data-theme-icon="gray" aria-hidden="true"></i>
+                <i class="fa-solid fa-circle text-sm" data-theme-icon="black" aria-hidden="true"></i>
+            </button>
+
+            <button type="submit" form="searchForm"
+                    class="app-icon-button inline-flex items-center justify-center rounded-xl border border-slate-500/60 bg-transparent w-10 h-10 shrink-0 hover:bg-slate-600 text-slate-300"
+                    title="Search">
+                <i class="fa-solid fa-magnifying-glass text-sm"></i>
+            </button>
+
+            <form id="searchForm" method="get" asp-page="/Issues/Index" class="w-full max-w-[680px]">
+                <input name="q"
+                       type="text"
+                       placeholder="Search"
+                       class="app-input w-full rounded-xl bg-slate-800/60 border border-slate-600/60 px-3 py-2 text-sm text-slate-100 placeholder-slate-400 focus:border-brand focus:ring-brand focus:ring-1" />
+            </form>
+
+            @* Create dropdown *@
+            <div class="relative" id="create-menu-wrapper">
+                <button type="button"
+                        id="create-menu-btn"
+                        class="app-primary inline-flex items-center justify-center rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:opacity-95 gap-2"
+                        aria-haspopup="true" aria-expanded="false">
+                    <i class="fa-solid fa-plus"></i>
+                    Create
+                    <i class="fa-solid fa-chevron-down text-xs opacity-80" id="create-menu-caret"></i>
+                </button>
+
+                <div id="create-menu-dropdown"
+                     class="absolute left-0 top-full mt-2 w-56 rounded-2xl border border-slate-600/60 bg-slate-800 shadow-2xl z-[200] overflow-hidden hidden" style="background:#1e293b;"
+                     role="menu">
+                    <div class="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Create new</div>
+
+                    <a href="/Spaces/Create"
+                       class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-100 hover:bg-slate-700 transition-colors" role="menuitem">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-purple-500/20 text-purple-400">
+                            <i class="fa-solid fa-layer-group text-xs"></i>
+                        </span>
+                        <div>
+                            <div class="font-medium">Project</div>
+                            <div class="text-xs text-slate-400">New workspace / space</div>
+                        </div>
+                    </a>
+
+                    <a href="/Issues/Upsert"
+                       class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-100 hover:bg-slate-700 transition-colors" role="menuitem">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400">
+                            <i class="fa-solid fa-flag text-xs"></i>
+                        </span>
+                        <div>
+                            <div class="font-medium">Mission / Issue</div>
+                            <div class="text-xs text-slate-400">Task, bug, story or epic</div>
+                        </div>
+                    </a>
+
+                    <a href="/Sprints/Upsert"
+                       class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-100 hover:bg-slate-700 transition-colors" role="menuitem">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-green-500/20 text-green-400">
+                            <i class="fa-solid fa-bolt text-xs"></i>
+                        </span>
+                        <div>
+                            <div class="font-medium">Sprint</div>
+                            <div class="text-xs text-slate-400">Plan a new sprint cycle</div>
+                        </div>
+                    </a>
+
+                    <div class="my-1 border-t border-slate-700/60"></div>
+
+                    <a href="/Admin/Statuses/Upsert"
+                       class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-100 hover:bg-slate-700 transition-colors" role="menuitem">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400">
+                            <i class="fa-solid fa-list-check text-xs"></i>
+                        </span>
+                        <div>
+                            <div class="font-medium">Status</div>
+                            <div class="text-xs text-slate-400">Create a new status</div>
+                        </div>
+                    </a>
+
+                    <a href="/Admin/Priorities/Upsert"
+                       class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-100 hover:bg-slate-700 transition-colors" role="menuitem">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-500/20 text-red-400">
+                            <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+                        </span>
+                        <div>
+                            <div class="font-medium">Priority</div>
+                            <div class="text-xs text-slate-400">Create a new priority level</div>
+                        </div>
+                    </a>
+
+                    <div class="pb-1"></div>
+                </div>
+            </div>
+
+            @if (isAuthed)
+            {
+                <div class="flex items-center gap-2">
+                    <div class="app-chip inline-flex items-center gap-2 rounded-xl border border-slate-500/60 bg-transparent px-3 py-2 text-sm text-slate-100">
+                        <i class="fa-solid fa-user text-slate-300"></i>
+                        <span class="truncate max-w-[140px]">@(string.IsNullOrWhiteSpace(userName) ? "User" : userName)</span>
+                    </div>
+                    <a asp-page="/Auth/Logout" class="inline-flex items-center justify-center rounded-xl border border-slate-500/60 bg-transparent px-3 py-2 text-sm text-slate-100 hover:bg-slate-600" title="Logout">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </a>
+                </div>
+            }
+            else
+            {
+                <a asp-page="/Auth/Login" class="inline-flex items-center justify-center rounded-xl border border-slate-500/60 bg-transparent px-3 py-2 text-sm text-slate-100 hover:bg-slate-600">Login</a>
+            }
+        </div>
+    </header>
+}
+
+<script>
+    (function () {
+        // English comments only inside code.
+        var THEME_KEY = 'theme';
+        var SIDEBAR_COLLAPSED_KEY = 'sidebarCollapsed';
+        var EMBED_MODE_KEY = 'work.embedMode';
+        var UI_VARS_KEY = 'work.uiVars';
+        var PREFIX = '[Work Bridge]';
+
+        function normalizeTheme(v) {
+            if (!v) return null;
+            v = String(v).toLowerCase();
+            if (v === 'dark' || v === 'grey') return 'gray';
+            if (v === 'gray' || v === 'light' || v === 'black') return v;
+            return null;
+        }
+
+        function normalizeLang(v) {
+            if (!v) return null;
+            return String(v).trim().toLowerCase() || null;
+        }
+
+        function normalizeDir(v, lang) {
+            var value = String(v || '').trim().toLowerCase();
+            if (value === 'rtl' || value === 'ltr') return value;
+            return (lang === 'he' || lang === 'ar') ? 'rtl' : 'ltr';
+        }
+
+        function isDarkTheme(theme) {
+            return theme === 'gray' || theme === 'black';
+        }
+
+        function nextTheme(theme) {
+            if (theme === 'gray') return 'light';
+            if (theme === 'light') return 'black';
+            return 'gray';
+        }
+
+        function notifyParent(type, payload) {
+            try {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ source: 'CRMManagement', type: type, payload: payload || {} }, '*');
+                }
+            } catch (_) { }
+        }
+
+        function setTheme(theme) {
+            var normalized = normalizeTheme(theme) || 'gray';
+            var isDark = isDarkTheme(normalized);
+            try {
+                document.documentElement.dataset.theme = normalized;
+                document.documentElement.classList.toggle('dark', isDark);
+                document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+            } catch (_) { }
+
+            try {
+                var themeBtn = document.getElementById('theme-toggle');
+                if (themeBtn) themeBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+            } catch (_) { }
+
+            try { localStorage.setItem(THEME_KEY, normalized); } catch (_) { }
+        }
+
+        function applyLanguage(lang, dir) {
+            var normalized = normalizeLang(lang);
+            if (!normalized) return;
+            var normalizedDir = normalizeDir(dir, normalized);
+
+            try {
+                document.documentElement.lang = normalized;
+                document.documentElement.dir = normalizedDir;
+            } catch (_) { }
+
+            try {
+                if (document.body) document.body.setAttribute('dir', normalizedDir);
+            } catch (_) { }
+
+            try {
+                document.querySelectorAll('[data-dir-sync]').forEach(function (el) {
+                    el.setAttribute('dir', normalizedDir);
+                });
+            } catch (_) { }
+
+            try { localStorage.setItem('work.lang', normalized); } catch (_) { }
+        }
+
+        function applyUiVars(vars, persist) {
+            if (!vars || typeof vars !== 'object') return;
+
+            try {
+                if (vars.brand) document.documentElement.style.setProperty('--ui-brand', vars.brand);
+                if (vars.bg) document.documentElement.style.setProperty('--ui-bg', vars.bg);
+                if (vars.card) document.documentElement.style.setProperty('--ui-card', vars.card);
+                if (vars.line) document.documentElement.style.setProperty('--ui-line', vars.line);
+            } catch (_) { }
+
+            if (persist !== false) {
+                try { localStorage.setItem(UI_VARS_KEY, JSON.stringify(vars)); } catch (_) { }
+            }
+        }
+
+        function applyEmbedMode(enabled, persist) {
+            var isEnabled = !!enabled;
+
+            try {
+                document.documentElement.classList.toggle('work-embedded', isEnabled);
+                if (isEnabled) {
+                    document.documentElement.dataset.embedMode = 'main-site';
+                } else {
+                    delete document.documentElement.dataset.embedMode;
+                }
+            } catch (_) { }
+
+            if (persist !== false) {
+                try {
+                    if (isEnabled) localStorage.setItem(EMBED_MODE_KEY, '1');
+                    else localStorage.removeItem(EMBED_MODE_KEY);
+                } catch (_) { }
+            }
+        }
+
+        function setSidebar(open) {
+            try {
+                document.body.classList.toggle('sidebar-collapsed', !open);
+            } catch (_) { }
+            try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, open ? '0' : '1'); } catch (_) { }
+            // Also toggle mobile drawer
+            try {
+                if (window.innerWidth < 768) {
+                    document.body.classList.toggle('mobile-sb-open', open);
+                }
+            } catch (_) { }
+            notifyParent('SIDEBAR_CHANGED', { sidebarCollapsed: !open });
+        }
+
+        function getState() {
+            return {
+                embedded: document.documentElement.classList.contains('work-embedded'),
+                sidebarCollapsed: document.body.classList.contains('sidebar-collapsed'),
+                theme: document.documentElement.dataset.theme || 'gray',
+                lang: document.documentElement.lang || 'en'
+            };
+        }
+
+        // Load initial theme/sidebar from storage.
+        try {
+            var savedTheme = localStorage.getItem(THEME_KEY);
+            if (savedTheme) setTheme(savedTheme);
+        } catch (_) { }
+        try {
+            var savedUiVars = localStorage.getItem(UI_VARS_KEY);
+            if (savedUiVars) applyUiVars(JSON.parse(savedUiVars), false);
+        } catch (_) { }
+        try {
+            var collapsed = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+            if (collapsed === '1') setSidebar(false);
+        } catch (_) { }
+        try { applyEmbedMode(localStorage.getItem(EMBED_MODE_KEY) === '1', false); } catch (_) { }
+
+        try {
+            var pageUrl = new URL(window.location.href);
+            if (pageUrl.searchParams.get('embed') === '1' || pageUrl.searchParams.get('iframe') === '1') {
+                applyEmbedMode(true, true);
+            }
+        } catch (_) { }
+
+        // Optional: accept parent messages.
+        window.addEventListener('message', function (event) {
+            var data = event && event.data ? event.data : {};
+            if (!data || !data.type) return;
+            var payload = data.payload && typeof data.payload === 'object' ? data.payload : {};
+
+            if (data.type === 'SET_THEME' && payload.theme) {
+                setTheme(payload.theme);
+            }
+            if (data.type === 'SET_SIDEBAR') {
+                setSidebar(!!payload.open);
+            }
+            if (data.type === 'TOGGLE_SIDEBAR') {
+                // On mobile: toggle drawer; on desktop: toggle collapsed
+                if (window.innerWidth < 768) {
+                    var mobileOpen = document.body.classList.contains('mobile-sb-open');
+                    setSidebar(!mobileOpen);
+                } else {
+                    setSidebar(document.body.classList.contains('sidebar-collapsed'));
+                }
+            }
+            if (data.type === 'SET_LANG' && payload.lang) {
+                applyLanguage(payload.lang, payload.dir);
+            }
+            if (data.type === 'SET_UI_VARS') {
+                applyUiVars(payload, true);
+            }
+            if (data.type === 'SET_EMBED_MODE') {
+                applyEmbedMode(payload.embedded !== false, true);
+            }
+            if (data.type === 'GET_STATE') {
+                notifyParent('STATE', getState());
+            }
+        });
+
+        try {
+            // console.log(PREFIX, 'Bridge ready');
+        } catch (_) { }
+
+        // Toggle sidebar from top bar.
+        function getSidebarOpen() {
+            try { return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) !== '1'; } catch (_) { return true; }
+        }
+
+        function toggleSidebar() {
+            var open = getSidebarOpen();
+            setSidebar(!open);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var btn = document.getElementById('sidebar-toggle');
+            if (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    toggleSidebar();
+                });
+            }
+
+            var themeBtn = document.getElementById('theme-toggle');
+            if (themeBtn) {
+                themeBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    var current = normalizeTheme(document.documentElement.dataset.theme) || 'gray';
+                    setTheme(nextTheme(current));
+                });
+            }
+
+            // Create dropdown
+            var createBtn = document.getElementById('create-menu-btn');
+            var createMenu = document.getElementById('create-menu-dropdown');
+            var createCaret = document.getElementById('create-menu-caret');
+
+            if (createBtn && createMenu) {
+                createBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var isOpen = !createMenu.classList.contains('hidden');
+                    createMenu.classList.toggle('hidden', isOpen);
+                    createBtn.setAttribute('aria-expanded', String(!isOpen));
+                    if (createCaret) createCaret.style.transform = isOpen ? '' : 'rotate(180deg)';
+                });
+
+                document.addEventListener('click', function () {
+                    createMenu.classList.add('hidden');
+                    createBtn.setAttribute('aria-expanded', 'false');
+                    if (createCaret) createCaret.style.transform = '';
+                });
+
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') {
+                        createMenu.classList.add('hidden');
+                        createBtn.setAttribute('aria-expanded', 'false');
+                        if (createCaret) createCaret.style.transform = '';
+                    }
+                });
+            }
+
+            notifyParent('IFRAME_READY', getState());
+        });
+
+    })();
+</script>

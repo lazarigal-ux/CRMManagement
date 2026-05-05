@@ -1,0 +1,90 @@
+@page
+@model CRMManagement.Web.Pages.Vendors.IndexModel
+@{ ViewData["Title"] = "Vendors"; }
+
+<section class="p-4 space-y-4 text-slate-200">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-100">Vendors</h1>
+            <p class="text-xs text-slate-400 mt-1">Suppliers and partners. Synced from Zoho's <code class="text-sky-300">Vendors</code> module.</p>
+        </div>
+        <a asp-page="/Vendors/Upsert" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm">
+            <i class="fa-solid fa-plus text-xs"></i> New
+        </a>
+    </div>
+
+    <form method="get" class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-3 flex flex-wrap items-end gap-3">
+        <div class="flex-1 min-w-[12rem]">
+            <label class="block text-xs text-slate-400 mb-1">Search</label>
+            <input name="Search" value="@Model.Search" placeholder="name / email / category"
+                   class="w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-1.5 text-sm" />
+        </div>
+        <label class="inline-flex items-center gap-2 text-sm">
+            <input type="checkbox" name="ActiveOnly" value="true" @(Model.ActiveOnly == true ? "checked" : "") class="rounded border-slate-600 bg-slate-900" />
+            <span>Active only</span>
+        </label>
+        <button type="submit" class="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-sm">Search</button>
+        <a asp-page="/Vendors/Index" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm">Reset</a>
+    </form>
+
+    <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 overflow-hidden">
+        <table data-cm-table="vendors" class="min-w-full text-sm">
+            <thead class="text-xs text-slate-400 uppercase bg-slate-900/40">
+                <tr>
+                    <th class="text-left px-3 py-2">Name</th>
+                    <th class="text-left px-3 py-2">Category</th>
+                    <th class="text-left px-3 py-2">Email</th>
+                    <th class="text-left px-3 py-2">Phone</th>
+                    <th class="text-left px-3 py-2">Website</th>
+                    <th class="text-left px-3 py-2">Active</th>
+                    @* Extra Zoho fields — default-hidden, surfaced via the "Columns" picker *@
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Description</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">City</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">State</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Country</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">GL Account</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Owner</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Created (Zoho)</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Modified (Zoho)</th>
+                    <th class="px-3 py-2"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700/40">
+                @if (Model.Items.Count == 0)
+                {
+                    <tr><td colspan="15" class="px-3 py-6 text-center text-slate-400">No vendors found.</td></tr>
+                }
+                @foreach (var v in Model.Items)
+                {
+                    var venDesc     = string.IsNullOrWhiteSpace(v.Description) ? "—" : (v.Description!.Length > 80 ? v.Description.Substring(0, 80) + "…" : v.Description);
+                    var venZCreated = v.ZohoCreatedTime?.ToString("yyyy-MM-dd HH:mm") ?? "—";
+                    var venZMod     = v.ZohoModifiedTime?.ToString("yyyy-MM-dd HH:mm") ?? "—";
+                    <tr class="hover:bg-slate-700/30">
+                        <td class="px-3 py-2 font-medium text-slate-100">@v.Name</td>
+                        <td class="px-3 py-2 text-slate-300">@v.Category</td>
+                        <td class="px-3 py-2 text-slate-300">@v.Email</td>
+                        <td class="px-3 py-2 text-slate-300">@v.Phone</td>
+                        <td class="px-3 py-2 text-slate-300">@v.Website</td>
+                        <td class="px-3 py-2">
+                            @if (v.IsActive)
+                            { <span class="px-2 py-0.5 rounded-full text-xs bg-emerald-900/40 text-emerald-300 border border-emerald-700/40">Active</span> }
+                            else
+                            { <span class="px-2 py-0.5 rounded-full text-xs bg-slate-700/40 text-slate-300 border border-slate-600/40">Inactive</span> }
+                        </td>
+                        <td class="px-3 py-2 text-slate-300" title="@(v.Description ?? "")">@venDesc</td>
+                        <td class="px-3 py-2 text-slate-300">@(v.City ?? "—")</td>
+                        <td class="px-3 py-2 text-slate-300">@(v.State ?? "—")</td>
+                        <td class="px-3 py-2 text-slate-300">@(v.Country ?? "—")</td>
+                        <td class="px-3 py-2 text-slate-300">@(v.GlAccount ?? "—")</td>
+                        <td class="px-3 py-2 text-slate-300">@(v.OwnerName ?? "—")</td>
+                        <td class="px-3 py-2 text-slate-400 whitespace-nowrap">@venZCreated</td>
+                        <td class="px-3 py-2 text-slate-400 whitespace-nowrap">@venZMod</td>
+                        <td class="px-3 py-2 text-right">
+                            <a asp-page="/Vendors/Details" asp-route-id="@v.Id" class="text-xs text-sky-300 hover:underline">Details</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

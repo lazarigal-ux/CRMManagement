@@ -1,0 +1,50 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "build-crmmanagement-web",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"${workspaceFolder}/CRMManagement.Web/CRMManagement.Web.csproj"
+			],
+			"problemMatcher": "$msCompile",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "run-crmmanagement-dev-script",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"${workspaceFolder}/scripts/run-crmmanagement-dev.ps1"
+			],
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "build-crmmanagement-web",
+			"type": "shell",
+			"command": "dotnet build /home/igal/MainLdataBrain/CRMManagement/CRMManagement.Web/CRMManagement.Web.csproj",
+			"group": "build"
+		},
+		{
+			"label": "build-crmmanagement-web",
+			"type": "shell",
+			"command": "dotnet build /home/igal/MainLdataBrain/CRMManagement/CRMManagement.Web/CRMManagement.Web.csproj",
+			"group": "build"
+		},
+		{
+			"label": "build-crmmanagement-web",
+			"type": "shell",
+			"command": "dotnet build /home/igal/MainLdataBrain/CRMManagement/CRMManagement.Web/CRMManagement.Web.csproj",
+			"group": "build"
+		}
+	]
+}

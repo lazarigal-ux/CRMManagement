@@ -1,0 +1,360 @@
+@page
+@model CRMManagement.Web.Pages.Quotes.FromDrawingModel
+@{ ViewData["Title"] = "Quote from Drawing"; }
+
+<section class="p-4 space-y-4 text-slate-200" data-page="quote-from-drawing"
+         data-opportunity-id="@(Model.OpportunityId?.ToString() ?? "")">
+    <header class="flex items-start justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-100">Quote from Drawing</h1>
+            <p class="text-xs text-slate-400 mt-1">
+                Upload a floor plan / device drawing → AI counts devices → preview & accept → draft quote.
+                @if (!string.IsNullOrEmpty(Model.OpportunityName))
+                {
+                    <span class="text-slate-300">Linked to <span class="font-semibold">@Model.OpportunityName</span>.</span>
+                }
+            </p>
+        </div>
+    </header>
+
+    <!-- 1. Upload step -->
+    <div id="uploadStep" class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 space-y-3">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300">1. Upload drawing</h2>
+        <input id="drawingFile" type="file" accept="image/png,image/jpeg,image/webp"
+               class="block w-full text-sm text-slate-200 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-700 file:text-slate-100" />
+        <textarea id="hintInput" rows="2" placeholder="Optional hint, e.g. 'fire alarm system layout — count detectors and sprinklers'"
+                  class="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm"></textarea>
+        <div class="flex items-center gap-2">
+            <button id="analyzeBtn" type="button"
+                    class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm disabled:opacity-50">Analyze</button>
+            <span id="analyzeStatus" class="text-xs text-slate-400 hidden">Sending to AI…</span>
+        </div>
+        <div id="analyzeError" class="hidden text-xs text-rose-300"></div>
+        <img id="drawingPreview" class="hidden mt-2 rounded-lg border border-slate-700 max-h-48" />
+    </div>
+
+    <!-- 2. Preview step -->
+    <div id="previewStep" class="hidden rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 space-y-3">
+        <div class="flex items-center justify-between">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300">2. Preview lines</h2>
+            <span id="previewMeta" class="text-xs text-slate-400"></span>
+        </div>
+        <p class="text-xs text-slate-400">
+            Edit counts/products before saving. Lines tagged <span class="text-amber-300">[unmapped]</span>
+            will save as descriptive lines without a product link until you map them in Admin → Class Mappings.
+        </p>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="text-xs text-slate-400 uppercase">
+                    <tr>
+                        <th class="text-left py-2">Label</th>
+                        <th class="text-left py-2">Product</th>
+                        <th class="text-right py-2">Count</th>
+                        <th class="text-right py-2">Unit price</th>
+                        <th class="text-right py-2">Line total</th>
+                    </tr>
+                </thead>
+                <tbody id="lineRows" class="divide-y divide-slate-700/40"></tbody>
+                <tfoot class="text-sm">
+                    <tr><td colspan="4" class="text-right py-2 text-slate-400">Subtotal</td>
+                        <td class="text-right py-2 text-emerald-300 font-semibold" id="subtotalCell">0.00</td></tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+            <label class="text-xs text-slate-400">Quote name
+                <input id="quoteName" type="text" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-slate-200" />
+            </label>
+            <label class="text-xs text-slate-400">Currency
+                <input id="quoteCurrency" type="text" value="USD" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-slate-200" />
+            </label>
+            <label class="text-xs text-slate-400">Notes
+                <input id="quoteNotes" type="text" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-slate-200" />
+            </label>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+            <button id="createQuoteBtn" type="button"
+                    class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm disabled:opacity-50">Create draft quote</button>
+            <button id="reanalyzeBtn" type="button"
+                    class="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-100 text-sm">Re-analyze</button>
+            <span id="createStatus" class="text-xs text-slate-400 hidden"></span>
+        </div>
+        <div id="createError" class="hidden text-xs text-rose-300"></div>
+    </div>
+
+    <!-- 3. Done step -->
+    <div id="doneStep" class="hidden rounded-2xl border border-emerald-700/40 bg-emerald-900/10 p-5">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-emerald-300">3. Quote created</h2>
+        <p class="mt-2 text-sm text-slate-200">Draft quote saved.
+            <a id="quoteLink" href="#" class="ml-2 underline text-sky-300">Open quote →</a>
+        </p>
+    </div>
+</section>
+
+<script>
+(function () {
+    var page = document.querySelector('[data-page="quote-from-drawing"]');
+    if (!page) return;
+    var oppId = page.dataset.opportunityId || null;
+
+    var fileInput   = document.getElementById('drawingFile');
+    var hintInput   = document.getElementById('hintInput');
+    var analyzeBtn  = document.getElementById('analyzeBtn');
+    var analyzeStatus = document.getElementById('analyzeStatus');
+    var analyzeError  = document.getElementById('analyzeError');
+    var preview     = document.getElementById('drawingPreview');
+
+    var previewStep = document.getElementById('previewStep');
+    var previewMeta = document.getElementById('previewMeta');
+    var lineRowsEl  = document.getElementById('lineRows');
+    var subtotalCell= document.getElementById('subtotalCell');
+    var quoteName   = document.getElementById('quoteName');
+    var quoteCurrency = document.getElementById('quoteCurrency');
+    var quoteNotes  = document.getElementById('quoteNotes');
+    var createBtn   = document.getElementById('createQuoteBtn');
+    var createStatus= document.getElementById('createStatus');
+    var createError = document.getElementById('createError');
+    var reanalyzeBtn= document.getElementById('reanalyzeBtn');
+
+    var doneStep = document.getElementById('doneStep');
+    var quoteLink = document.getElementById('quoteLink');
+
+    var currentAnalysis = null;
+    var productCache = null;
+
+    fileInput.addEventListener('change', function () {
+        var f = fileInput.files && fileInput.files[0];
+        if (!f) { preview.classList.add('hidden'); return; }
+        preview.src = URL.createObjectURL(f);
+        preview.classList.remove('hidden');
+    });
+
+    analyzeBtn.addEventListener('click', function () {
+        var f = fileInput.files && fileInput.files[0];
+        if (!f) { showErr(analyzeError, 'Pick a file first.'); return; }
+        analyzeError.classList.add('hidden');
+        analyzeStatus.classList.remove('hidden');
+        analyzeBtn.disabled = true;
+
+        toBase64(f).then(function (b64) {
+            return fetch('/api/drawings/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    opportunityId: oppId || null,
+                    accountId: null,
+                    sourceFileName: f.name,
+                    mediaType: f.type || 'image/png',
+                    imageBase64: b64,
+                    instruction: hintInput.value || null
+                })
+            });
+        }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+          .then(function (res) {
+              analyzeStatus.classList.add('hidden');
+              analyzeBtn.disabled = false;
+              if (!res.ok) {
+                  showErr(analyzeError, (res.body && res.body.error) || 'Analyze failed.');
+                  return;
+              }
+              if (res.body.status !== 'ready') {
+                  showErr(analyzeError, res.body.errorMessage || ('Analysis status: ' + res.body.status));
+                  return;
+              }
+              currentAnalysis = res.body;
+              renderPreview(res.body);
+          })
+          .catch(function (e) {
+              analyzeStatus.classList.add('hidden');
+              analyzeBtn.disabled = false;
+              showErr(analyzeError, 'Network error: ' + (e && e.message ? e.message : e));
+          });
+    });
+
+    reanalyzeBtn.addEventListener('click', function () {
+        previewStep.classList.add('hidden');
+        doneStep.classList.add('hidden');
+        currentAnalysis = null;
+    });
+
+    createBtn.addEventListener('click', function () {
+        if (!currentAnalysis) return;
+        createError.classList.add('hidden');
+        createStatus.textContent = 'Creating quote…';
+        createStatus.classList.remove('hidden');
+        createBtn.disabled = true;
+
+        var overrides = readOverrides();
+        fetch('/api/drawings/create-quote', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                analysisId: currentAnalysis.id,
+                quoteName: quoteName.value || ('Drawing quote — ' + currentAnalysis.sourceFileName),
+                currency: quoteCurrency.value || 'USD',
+                discount: 0,
+                tax: 0,
+                notes: quoteNotes.value || null,
+                overrides: overrides
+            })
+        }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+          .then(function (res) {
+              createStatus.classList.add('hidden');
+              createBtn.disabled = false;
+              if (!res.ok) {
+                  showErr(createError, (res.body && res.body.error) || 'Could not create quote.');
+                  return;
+              }
+              quoteLink.href = '/Quotes/Details/' + res.body.quoteId;
+              doneStep.classList.remove('hidden');
+              previewStep.classList.add('hidden');
+          });
+    });
+
+    function renderPreview(a) {
+        previewStep.classList.remove('hidden');
+        doneStep.classList.add('hidden');
+        previewMeta.textContent = a.items.length + ' line type(s) · file ' + a.sourceFileName;
+        quoteName.value = 'Drawing quote — ' + a.sourceFileName;
+
+        ensureProducts().then(function (products) {
+            lineRowsEl.innerHTML = '';
+            a.items.forEach(function (it, i) {
+                var tr = document.createElement('tr');
+                tr.className = it.isMapped ? '' : 'bg-amber-900/10';
+                tr.dataset.label = it.label;
+
+                var labelTd = document.createElement('td');
+                labelTd.className = 'py-2';
+                labelTd.innerHTML = (it.isMapped ? '' : '<span class="text-amber-300 mr-1">[unmapped]</span>') +
+                                    escapeHtml(it.label) +
+                                    (it.notes ? '<div class="text-xs text-slate-500">' + escapeHtml(it.notes) + '</div>' : '');
+                tr.appendChild(labelTd);
+
+                var prodTd = document.createElement('td');
+                prodTd.className = 'py-2';
+                var sel = document.createElement('select');
+                sel.className = 'w-full rounded border border-slate-700 bg-slate-900/60 px-2 py-1 text-xs';
+                sel.innerHTML = '<option value="">— pick product —</option>' +
+                    products.map(function (p) {
+                        var selAttr = (it.mappedProductId && it.mappedProductId === p.id) ? ' selected' : '';
+                        return '<option value="' + p.id + '" data-price="' + p.standardPrice + '"' + selAttr + '>' +
+                               escapeHtml(p.sku + ' · ' + p.name) + '</option>';
+                    }).join('');
+                prodTd.appendChild(sel);
+                tr.appendChild(prodTd);
+
+                var countTd = document.createElement('td');
+                countTd.className = 'py-2 text-right';
+                var countInp = document.createElement('input');
+                countInp.type = 'number'; countInp.min = '0'; countInp.step = '1'; countInp.value = it.count;
+                countInp.className = 'w-20 text-right rounded border border-slate-700 bg-slate-900/60 px-2 py-1 text-xs';
+                countTd.appendChild(countInp);
+                tr.appendChild(countTd);
+
+                var priceTd = document.createElement('td');
+                priceTd.className = 'py-2 text-right';
+                var priceInp = document.createElement('input');
+                priceInp.type = 'number'; priceInp.min = '0'; priceInp.step = '0.01';
+                priceInp.value = (it.unitPrice != null ? it.unitPrice : 0).toFixed(2);
+                priceInp.className = 'w-24 text-right rounded border border-slate-700 bg-slate-900/60 px-2 py-1 text-xs';
+                priceTd.appendChild(priceInp);
+                tr.appendChild(priceTd);
+
+                var lineTd = document.createElement('td');
+                lineTd.className = 'py-2 text-right text-emerald-300';
+                lineTd.textContent = (it.count * (it.unitPrice || 0)).toFixed(2);
+                tr.appendChild(lineTd);
+
+                function recalc() {
+                    var c = parseInt(countInp.value, 10) || 0;
+                    var p = parseFloat(priceInp.value) || 0;
+                    lineTd.textContent = (c * p).toFixed(2);
+                    sumSubtotal();
+                }
+                sel.addEventListener('change', function () {
+                    var opt = sel.options[sel.selectedIndex];
+                    var price = parseFloat(opt && opt.dataset.price) || 0;
+                    if (price > 0) priceInp.value = price.toFixed(2);
+                    recalc();
+                });
+                countInp.addEventListener('input', recalc);
+                priceInp.addEventListener('input', recalc);
+
+                lineRowsEl.appendChild(tr);
+            });
+            sumSubtotal();
+        });
+    }
+
+    function readOverrides() {
+        var rows = lineRowsEl.querySelectorAll('tr');
+        var overrides = [];
+        rows.forEach(function (tr) {
+            var label = tr.dataset.label;
+            var sel = tr.querySelector('select');
+            var inputs = tr.querySelectorAll('input');
+            var productId = sel && sel.value ? sel.value : null;
+            var count = inputs[0] ? parseInt(inputs[0].value, 10) : null;
+            var price = inputs[1] ? parseFloat(inputs[1].value) : null;
+            overrides.push({
+                label: label,
+                productId: productId,
+                countOverride: (isFinite(count) ? count : null),
+                unitPriceOverride: (isFinite(price) ? price : null)
+            });
+        });
+        return overrides;
+    }
+
+    function sumSubtotal() {
+        var sum = 0;
+        lineRowsEl.querySelectorAll('tr').forEach(function (tr) {
+            var inputs = tr.querySelectorAll('input');
+            var c = parseInt(inputs[0].value, 10) || 0;
+            var p = parseFloat(inputs[1].value) || 0;
+            sum += c * p;
+        });
+        subtotalCell.textContent = sum.toFixed(2);
+    }
+
+    function ensureProducts() {
+        if (productCache) return Promise.resolve(productCache);
+        return fetch('/api/products').then(function (r) { return r.ok ? r.json() : []; })
+            .then(function (list) {
+                // Normalize — accept either a flat list or a wrapped object.
+                var arr = Array.isArray(list) ? list : (list && list.items) ? list.items : [];
+                productCache = arr.map(function (p) {
+                    return {
+                        id: p.id || p.Id,
+                        name: p.name || p.Name,
+                        sku: p.sku || p.Sku,
+                        standardPrice: p.standardPrice || p.StandardPrice || 0
+                    };
+                });
+                return productCache;
+            }).catch(function () { productCache = []; return productCache; });
+    }
+
+    function showErr(el, msg) { el.textContent = msg; el.classList.remove('hidden'); }
+    function escapeHtml(s) {
+        return (s || '').replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+    function toBase64(file) {
+        return new Promise(function (resolve, reject) {
+            var r = new FileReader();
+            r.onload = function () {
+                var s = String(r.result || '');
+                var i = s.indexOf(',');
+                resolve(i >= 0 ? s.substring(i + 1) : s);
+            };
+            r.onerror = function () { reject(new Error('read failed')); };
+            r.readAsDataURL(file);
+        });
+    }
+})();
+</script>

@@ -1,0 +1,35 @@
+@page
+@model CRMManagement.Web.Pages.Admin.Users.IndexModel
+@{ ViewData["Title"] = "Admin - Users"; }
+
+<section class="p-4 space-y-4">
+    <h1 class="text-2xl font-semibold text-slate-100">Users</h1>
+    <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 overflow-auto">
+        <table class="w-full text-sm text-slate-200">
+            <thead><tr class="text-left text-xs uppercase text-slate-400"><th class="py-2">User</th><th class="py-2">Email</th><th class="py-2">Active</th><th class="py-2">Roles</th><th class="py-2">Actions</th></tr></thead>
+            <tbody>
+            @foreach (var u in Model.Items)
+            {
+                <tr class="border-t border-slate-700/40 align-top">
+                    <td class="py-2">@u.UserName</td>
+                    <td class="py-2">@u.Email</td>
+                    <td class="py-2">@(u.IsActive ? "Yes" : "No")</td>
+                    <td class="py-2">@string.Join(", ", u.Roles)</td>
+                    <td class="py-2">
+                        <form method="post" asp-page-handler="ToggleActive" class="inline-block mb-2">
+                            <input type="hidden" name="userId" value="@u.Id" />
+                            <input type="hidden" name="isActive" value="@((!u.IsActive).ToString().ToLower())" />
+                            <button class="px-3 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs">@(u.IsActive ? "Deactivate" : "Activate")</button>
+                        </form>
+                        <form method="post" asp-page-handler="SetRoles" class="flex gap-2 items-center">
+                            <input type="hidden" name="userId" value="@u.Id" />
+                            <input name="roles" value="@string.Join(",", u.Roles)" placeholder="comma,separated,roles" class="rounded-lg bg-slate-900/60 border border-slate-700 px-2 py-1 text-slate-100 text-xs" />
+                            <button class="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs">Set roles</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

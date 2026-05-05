@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "Launcher (https)": {
+      "commandName": "Project",
+      "commandLineArgs": "https",
+      "workingDirectory": "$(ProjectDir)",
+      "environmentVariables": {
+        "CRM_DEV_BYPASS_AUTH": "1"
+      }
+    },
+    "Launcher (http)": {
+      "commandName": "Project",
+      "commandLineArgs": "http",
+      "workingDirectory": "$(ProjectDir)",
+      "environmentVariables": {
+        "CRM_DEV_BYPASS_AUTH": "1"
+      }
+    },
+    "Launcher (no browser)": {
+      "commandName": "Project",
+      "commandLineArgs": "https --no-browser",
+      "workingDirectory": "$(ProjectDir)",
+      "environmentVariables": {
+        "CRM_DEV_BYPASS_AUTH": "1"
+      }
+    }
+  }
+}

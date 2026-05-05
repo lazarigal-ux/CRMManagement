@@ -1,0 +1,81 @@
+@page "{id:guid?}"
+@model CRMManagement.Web.Pages.Vendors.UpsertModel
+@{
+    var isEdit = Model.Input.Id is not null;
+    ViewData["Title"] = isEdit ? "Edit Vendor" : "New Vendor";
+}
+
+<section class="p-4 space-y-4 text-slate-200 max-w-4xl">
+    <div>
+        <a asp-page="/Vendors/Index" class="text-xs text-slate-400 hover:underline"><i class="fa-solid fa-arrow-left text-[10px]"></i> Back to Vendors</a>
+        <h1 class="text-2xl font-semibold text-slate-100 mt-1">@(isEdit ? "Edit Vendor" : "New Vendor")</h1>
+    </div>
+
+    <form method="post" class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 space-y-4">
+        <div asp-validation-summary="ModelOnly" class="text-sm text-rose-300"></div>
+        <input type="hidden" asp-for="Input.Id" />
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <label class="block">
+                <span class="text-xs text-slate-400">Name <span class="text-rose-400">*</span></span>
+                <input asp-for="Input.Name" required class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">Category</span>
+                <input asp-for="Input.Category" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">Email</span>
+                <input asp-for="Input.Email" type="email" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">Phone</span>
+                <input asp-for="Input.Phone" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="block md:col-span-2">
+                <span class="text-xs text-slate-400">Website</span>
+                <input asp-for="Input.Website" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">GL Account</span>
+                <input asp-for="Input.GlAccount" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="inline-flex items-center gap-2 mt-6">
+                <input asp-for="Input.IsActive" type="checkbox" class="rounded border-slate-600 bg-slate-900" />
+                <span class="text-sm">Active</span>
+            </label>
+
+            <label class="block md:col-span-2">
+                <span class="text-xs text-slate-400">Street</span>
+                <input asp-for="Input.Street" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">City</span>
+                <input asp-for="Input.City" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">State</span>
+                <input asp-for="Input.State" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">Zip Code</span>
+                <input asp-for="Input.ZipCode" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">Country</span>
+                <input asp-for="Input.Country" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+
+            <label class="block md:col-span-2">
+                <span class="text-xs text-slate-400">Description</span>
+                <textarea asp-for="Input.Description" rows="3" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2"></textarea>
+            </label>
+        </div>
+
+        <div class="flex justify-end gap-2">
+            <a asp-page="/Vendors/Index" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm">Cancel</a>
+            <button type="submit" class="px-4 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-sm">@(isEdit ? "Save" : "Create")</button>
+        </div>
+    </form>
+</section>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

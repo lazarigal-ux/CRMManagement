@@ -1,0 +1,75 @@
+@model CRMManagement.Application.DTOs.DashboardSummaryDto
+@functions {
+    static (string text, string cls) Delta(decimal? cur, decimal? prev)
+    {
+        if (prev is null or 0m)
+        {
+            if (cur is null or 0m) return ("—", "neutral");
+            return ("New", "up");
+        }
+        var pct = ((cur ?? 0m) - prev.Value) / prev.Value * 100m;
+        var rounded = Math.Round(pct, 1);
+        var sign = rounded > 0 ? "+" : "";
+        var cls = rounded > 0 ? "up" : (rounded < 0 ? "down" : "neutral");
+        return ($"{sign}{rounded.ToString("0.#")}%", cls);
+    }
+}
+@{
+    var s = Model;
+    var leadsDelta = Delta(s.OpenLeads, s.OpenLeadsPrev);
+    var wonCountDelta = Delta(s.WonOpportunitiesThisMonth, s.WonOpportunitiesPrevMonth);
+    var wonAmountDelta = Delta(s.WonAmountThisMonth, s.WonAmountPrevMonth);
+}
+
+@* "My ___" KPI cards mirror the home dashboard reference *@
+<div class="crm-dash-kpi-grid">
+    <div class="crm-dash-kpi-card">
+        <div class="crm-dash-kpi-label">My Open Deals</div>
+        <div class="crm-dash-kpi-value">@s.MyOpenDeals</div>
+        <div class="crm-dash-kpi-meta">Owned by you</div>
+    </div>
+    <div class="crm-dash-kpi-card">
+        <div class="crm-dash-kpi-label">My Untouched Deals</div>
+        <div class="crm-dash-kpi-value">@s.MyUntouchedDeals</div>
+        <div class="crm-dash-kpi-meta">No activity in 7+ days</div>
+    </div>
+    <div class="crm-dash-kpi-card">
+        <div class="crm-dash-kpi-label">My Calls Today</div>
+        <div class="crm-dash-kpi-value">@s.MyCallsToday</div>
+        <div class="crm-dash-kpi-meta">Scheduled for today</div>
+    </div>
+    <div class="crm-dash-kpi-card">
+        <div class="crm-dash-kpi-label">My Leads</div>
+        <div class="crm-dash-kpi-value">@s.MyLeads</div>
+        <div class="crm-dash-kpi-meta">Open leads owned by you</div>
+    </div>
+</div>
+
+@* Org-wide context KPIs *@
+<div class="crm-dash-kpi-grid">
+    <div class="crm-dash-kpi-card">
+        <div class="crm-dash-kpi-label">Open Leads</div>
+        <div class="crm-dash-kpi-value">@s.OpenLeads</div>
+        <div class="crm-dash-kpi-meta"><span class="crm-dash-delta @leadsDelta.cls">@leadsDelta.text</span><span>vs last month</span></div>
+    </div>
+    <div class="crm-dash-kpi-card">
+        <div class="crm-dash-kpi-label">Open Opportunities</div>
+        <div class="crm-dash-kpi-value">@s.OpenOpportunities</div>
+        <div class="crm-dash-kpi-meta">Pipeline @s.TotalPipelineAmount.ToString("N2")</div>
+    </div>
+    <div class="crm-dash-kpi-card">
+        <div class="crm-dash-kpi-label">Won This Month</div>
+        <div class="crm-dash-kpi-value">@s.WonOpportunitiesThisMonth</div>
+        <div class="crm-dash-kpi-meta"><span class="crm-dash-delta @wonCountDelta.cls">@wonCountDelta.text</span><span>vs last month</span></div>
+    </div>
+    <div class="crm-dash-kpi-card">
+        <div class="crm-dash-kpi-label">Revenue This Month</div>
+        <div class="crm-dash-kpi-value">@s.WonAmountThisMonth.ToString("N2")</div>
+        <div class="crm-dash-kpi-meta"><span class="crm-dash-delta @wonAmountDelta.cls">@wonAmountDelta.text</span><span>vs last month</span></div>
+    </div>
+    <div class="crm-dash-kpi-card">
+        <div class="crm-dash-kpi-label">Open Tickets</div>
+        <div class="crm-dash-kpi-value">@s.OpenTickets</div>
+        <div class="crm-dash-kpi-meta">Support backlog</div>
+    </div>
+</div>

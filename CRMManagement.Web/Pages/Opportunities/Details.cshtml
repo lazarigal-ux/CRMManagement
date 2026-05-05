@@ -1,0 +1,50 @@
+@page "{id:guid}"
+@model CRMManagement.Web.Pages.Opportunities.DetailsModel
+@{ ViewData["Title"] = "Opportunity Details"; }
+
+@if (Model.Item is null)
+{
+    <div class="p-4 text-slate-300">Not found.</div>
+}
+else
+{
+    var o = Model.Item;
+    ViewData["AiAssistantKind"] = "Opportunity";
+    ViewData["AiAssistantId"] = o.Id;
+    ViewData["TimelineKind"] = "Opportunity";
+    ViewData["TimelineId"] = o.Id;
+    <section class="p-4 space-y-4">
+        <div class="flex items-center justify-between gap-2">
+            <h1 class="text-2xl font-semibold text-slate-100">@o.Name</h1>
+            <div class="flex items-center gap-2">
+                <a asp-page="/Quotes/FromDrawing" asp-route-opportunityId="@o.Id"
+                   class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm flex items-center gap-2"
+                   title="Generate a quote by counting devices on a drawing">
+                    <i class="fa-solid fa-vector-square text-xs"></i>
+                    <span>Quote from drawing</span>
+                </a>
+                <a asp-page="/Opportunities/Upsert" asp-route-id="@o.Id" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm">Edit</a>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="lg:col-span-2 rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-200">
+                <div><span class="text-slate-400">Amount:</span> @o.Amount.ToString("N2") @o.Currency</div>
+                <div><span class="text-slate-400">Probability:</span> @o.Probability%</div>
+                <div><span class="text-slate-400">Status:</span> @o.Status</div>
+                <div><span class="text-slate-400">Close Date:</span> @(o.CloseDate?.ToString("yyyy-MM-dd") ?? "-")</div>
+                <div><span class="text-slate-400">Account:</span> @o.AccountId</div>
+                <div><span class="text-slate-400">Contact:</span> @o.ContactId</div>
+                <div><span class="text-slate-400">Pipeline:</span> @o.PipelineId</div>
+                <div><span class="text-slate-400">Stage:</span> @o.StageId</div>
+                <div><span class="text-slate-400">Lead Source:</span> @o.LeadSource</div>
+                <div><span class="text-slate-400">Next Step:</span> @o.NextStep</div>
+                <div class="md:col-span-2"><span class="text-slate-400">Description:</span> @o.Description</div>
+            </div>
+            <div class="lg:col-span-1 space-y-3">
+                <partial name="_AiAssistantSidebar" />
+                <partial name="_TimelineFeed" />
+            </div>
+        </div>
+        <partial name="_CustomFields" model='(EntityType: "Opportunity", EntityId: Model.Item!.Id)' />
+</section>
+}

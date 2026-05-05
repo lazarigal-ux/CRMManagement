@@ -1,0 +1,62 @@
+@page "{id:guid?}"
+@model CRMManagement.Web.Pages.Solutions.UpsertModel
+@{
+    var isEdit = Model.Input.Id is not null;
+    ViewData["Title"] = isEdit ? "Edit Solution" : "New Solution";
+}
+
+<section class="p-4 space-y-4 text-slate-200 max-w-4xl">
+    <div>
+        <a asp-page="/Solutions/Index" class="text-xs text-slate-400 hover:underline"><i class="fa-solid fa-arrow-left text-[10px]"></i> Back to Solutions</a>
+        <h1 class="text-2xl font-semibold text-slate-100 mt-1">@(isEdit ? "Edit Solution" : "New Solution")</h1>
+    </div>
+
+    <form method="post" class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 space-y-4">
+        <div asp-validation-summary="ModelOnly" class="text-sm text-rose-300"></div>
+        <input type="hidden" asp-for="Input.Id" />
+        <input type="hidden" asp-for="Input.ProductId" />
+        <input type="hidden" asp-for="Input.OwnerUserId" />
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <label class="block">
+                <span class="text-xs text-slate-400">Solution Number <span class="text-rose-400">*</span></span>
+                <input asp-for="Input.SolutionNumber" required class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2 font-mono" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">Status</span>
+                <input asp-for="Input.Status" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="block md:col-span-2">
+                <span class="text-xs text-slate-400">Title <span class="text-rose-400">*</span></span>
+                <input asp-for="Input.Title" required class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="block">
+                <span class="text-xs text-slate-400">Category</span>
+                <input asp-for="Input.Category" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2" />
+            </label>
+            <label class="inline-flex items-center gap-2 mt-6">
+                <input asp-for="Input.Published" type="checkbox" class="rounded border-slate-600 bg-slate-900" />
+                <span class="text-sm">Published</span>
+            </label>
+
+            <label class="block md:col-span-2">
+                <span class="text-xs text-slate-400">Question</span>
+                <textarea asp-for="Input.Question" rows="4" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2"></textarea>
+            </label>
+            <label class="block md:col-span-2">
+                <span class="text-xs text-slate-400">Answer</span>
+                <textarea asp-for="Input.Answer" rows="6" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2"></textarea>
+            </label>
+            <label class="block md:col-span-2">
+                <span class="text-xs text-slate-400">Comments</span>
+                <textarea asp-for="Input.Comments" rows="3" class="mt-1 w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-2"></textarea>
+            </label>
+        </div>
+
+        <div class="flex justify-end gap-2">
+            <a asp-page="/Solutions/Index" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm">Cancel</a>
+            <button type="submit" class="px-4 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-sm">@(isEdit ? "Save" : "Create")</button>
+        </div>
+    </form>
+</section>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

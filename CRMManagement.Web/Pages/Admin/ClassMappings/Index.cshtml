@@ -1,0 +1,91 @@
+@page
+@model CRMManagement.Web.Pages.Admin.ClassMappings.IndexModel
+@{ ViewData["Title"] = "Class → Product Mappings"; }
+
+<section class="p-4 space-y-4 text-slate-200">
+    <header>
+        <h1 class="text-2xl font-semibold text-slate-100">Class → Product Mappings</h1>
+        <p class="text-xs text-slate-400 mt-1">
+            When the AI counts devices on a drawing, each label (e.g. <code>smoke detector</code>) maps to a product
+            so the generated quote has the right SKU + price. Multiplier &gt; 1.0 adds extra units (e.g. 1.10 for 10% spare cabling).
+        </p>
+    </header>
+
+    @if (TempData["error"] is string err)
+    {
+        <div class="rounded-lg border border-rose-700/50 bg-rose-900/20 p-3 text-sm text-rose-200">@err</div>
+    }
+
+    <form method="post" class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+        <div class="md:col-span-3">
+            <label class="text-xs text-slate-400">Label (lowercase)</label>
+            <input asp-for="Label" class="w-full mt-1 rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm" placeholder="smoke detector" />
+        </div>
+        <div class="md:col-span-4">
+            <label class="text-xs text-slate-400">Product</label>
+            <select asp-for="ProductId" class="w-full mt-1 rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm">
+                <option value="">— pick —</option>
+                @foreach (var p in Model.Products)
+                {
+                    <option value="@p.Id">@p.Sku · @p.Name (@p.StandardPrice.ToString("N2"))</option>
+                }
+            </select>
+        </div>
+        <div class="md:col-span-2">
+            <label class="text-xs text-slate-400">Multiplier</label>
+            <input asp-for="Multiplier" type="number" step="0.01" min="0" class="w-full mt-1 rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm" />
+        </div>
+        <div class="md:col-span-2">
+            <label class="text-xs text-slate-400">Notes</label>
+            <input asp-for="Notes" class="w-full mt-1 rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm" />
+        </div>
+        <div class="md:col-span-1">
+            <label class="text-xs text-slate-400 flex items-center gap-1 mt-5">
+                <input asp-for="IsActive" type="checkbox" class="rounded" /> Active
+            </label>
+        </div>
+        <div class="md:col-span-12">
+            <button type="submit" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm">Add mapping</button>
+        </div>
+    </form>
+
+    <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-3">Existing mappings</h2>
+        @if (Model.Mappings.Count == 0)
+        {
+            <p class="text-xs text-slate-400">No mappings yet. Add one above so the next drawing analysis produces priced lines.</p>
+        }
+        else
+        {
+            <table class="min-w-full text-sm">
+                <thead class="text-xs text-slate-400 uppercase">
+                    <tr>
+                        <th class="text-left py-2">Label</th>
+                        <th class="text-left py-2">Product</th>
+                        <th class="text-right py-2">Multiplier</th>
+                        <th class="text-left py-2">Notes</th>
+                        <th class="text-left py-2">Active</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-700/40">
+                    @foreach (var m in Model.Mappings)
+                    {
+                        <tr>
+                            <td class="py-2"><code class="text-amber-300">@m.Label</code></td>
+                            <td class="py-2">@m.ProductSku · @m.ProductName</td>
+                            <td class="py-2 text-right">@m.Multiplier.ToString("N2")</td>
+                            <td class="py-2 text-slate-400">@m.Notes</td>
+                            <td class="py-2">@(m.IsActive ? "yes" : "no")</td>
+                            <td class="py-2 text-right">
+                                <form method="post" asp-page-handler="Delete" asp-route-id="@m.Id" onsubmit="return confirm('Delete mapping for &quot;@m.Label&quot;?');">
+                                    <button type="submit" class="px-2 py-1 rounded bg-rose-700/60 hover:bg-rose-600 text-xs text-white">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</section>

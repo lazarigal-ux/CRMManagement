@@ -1,0 +1,60 @@
+@page
+@model CRMManagement.Web.Pages.Home.IndexModel
+@{
+    ViewData["Title"] = "Home";
+}
+
+<section class="crm-dash-page w-full mt-2 space-y-3" data-page="crm-home">
+    @await Html.PartialAsync("_HomeStyles")
+
+    @if (Model.Summary is null)
+    {
+        <div class="rounded-2xl border p-6" style="background:light-dark(#ffffff, rgb(51,65,85));border-color:light-dark(#d5dbdb, rgba(71,85,105,.5));color:light-dark(#16191f, #cbd5e1)">Loading...</div>
+    }
+    else
+    {
+        var s = Model.Summary;
+
+        <div class="crm-dash-shell rounded-2xl border overflow-hidden"
+             style="background:light-dark(#ffffff, rgb(51,65,85));
+                    border-color:light-dark(#d5dbdb, rgba(71,85,105,.5));
+                    box-shadow:light-dark(0 1px 4px rgba(0,0,0,.1), 0 2px 8px rgba(0,0,0,.35));
+                    color:light-dark(#16191f, #f1f5f9)">
+
+            <div class="flex flex-wrap items-center gap-3 px-4 py-3"
+                 style="border-bottom:1px solid light-dark(#d5dbdb, rgba(255,255,255,.08))">
+                <i class="fa-solid fa-house text-sm" style="color:light-dark(#0073bb, #3b82f6)"></i>
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold uppercase tracking-wider"
+                        style="color:light-dark(#545b64, #cbd5e1)">Welcome @s.WelcomeName</h3>
+                    <div class="mt-0.5 text-xs" style="color:light-dark(#687078, #94a3b8)">Here's how your pipeline is looking today.</div>
+                </div>
+            </div>
+
+            <div class="crm-dash-content">
+
+                @await Html.PartialAsync("_KpiCards", s)
+
+                @await Html.PartialAsync("_RevenueTarget", s)
+
+                <div class="crm-dash-detail-grid">
+                    @await Html.PartialAsync("_MyOpenTasks", s.MyOpenTasks)
+                    @await Html.PartialAsync("_MyMeetings", s.MyMeetings)
+                </div>
+
+                <div class="crm-dash-detail-grid">
+                    @await Html.PartialAsync("_TodaysLeads", s.TodaysLeads)
+                    @await Html.PartialAsync("_ClosingThisMonth", s.ClosingThisMonth)
+                </div>
+
+                <div class="crm-dash-detail-grid">
+                    @await Html.PartialAsync("_PipelineByStage", s.MyPipelineByStage)
+                    @await Html.PartialAsync("_TopOpportunities", s.TopOpportunities)
+                </div>
+
+                @await Html.PartialAsync("_RecentActivities", s.RecentActivities)
+
+            </div>
+        </div>
+    }
+</section>

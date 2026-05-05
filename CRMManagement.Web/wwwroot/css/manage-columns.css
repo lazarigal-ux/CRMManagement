@@ -1,0 +1,175 @@
+/* Hide column cells via attribute set by manage-columns.js */
+[data-cm-hidden] { display: none !important; }
+
+/* When borders are applied by the page using :last-child, hidden cells leave a
+ * phantom border on what was previously the second-to-last cell. The script sets
+ * data-cm-last-visible on the last visible cell of each row so we can drop the
+ * trailing border consistently regardless of which column was hidden. */
+[data-cm-last-visible] { border-right: none !important; }
+
+/* Smooth visual when columns toggle on/off via the picker. */
+table[data-cm-table] th,
+table[data-cm-table] td {
+    transition: padding .15s ease, background-color .15s ease;
+}
+
+/* Hidden-count badge on the Columns button so users see at a glance that
+ * something has been collapsed away — fixes the "looks like data is missing"
+ * feedback when columns are hidden silently. */
+.cm-trigger-badge {
+    display: inline-flex;
+    align-items: center;
+    margin-inline-start: .35rem;
+    padding: .05rem .45rem;
+    border-radius: 999px;
+    font-size: .65rem;
+    font-weight: 700;
+    background: light-dark(#dbeafe, rgba(37,99,235,.25));
+    color: light-dark(#1d4ed8, #93c5fd);
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+/* Trigger button styling — matches saved-views bar buttons (.svb-btn) */
+.cm-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .35rem .75rem;
+    border-radius: 999px;
+    border: 1px solid light-dark(#aab7b8, rgba(100,116,139,.55));
+    background: light-dark(#ffffff, rgba(30,41,59,.5));
+    color: light-dark(#16191f, #f1f5f9);
+    font-size: .72rem; font-weight: 600; cursor: pointer;
+    transition: background .15s;
+}
+.cm-trigger:hover { background: light-dark(#f7f8f8, rgba(255,255,255,.08)); }
+
+.cm-trigger-bar {
+    display: flex; justify-content: flex-end;
+    padding: .55rem .85rem;
+    border-bottom: 1px solid light-dark(#d5dbdb, rgba(71,85,105,.4));
+    background: light-dark(#fafbfc, rgba(15,23,42,.3));
+}
+
+/* Make the button stand out a bit more so users notice it. */
+.cm-trigger {
+    box-shadow: 0 1px 2px rgba(0,0,0,.08);
+}
+.cm-trigger:hover {
+    border-color: #2563eb;
+    color: #2563eb;
+}
+
+/* Modal */
+.cm-modal-back {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.5);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 9999;
+}
+.cm-modal-back.open { display: flex; }
+
+.cm-modal {
+    background: light-dark(#ffffff, rgb(30,41,59));
+    color: light-dark(#16191f, #f1f5f9);
+    border-radius: 1rem;
+    border: 1px solid light-dark(#d5dbdb, rgba(71,85,105,.6));
+    padding: 1.25rem;
+    width: min(440px, 92vw);
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,.45);
+}
+.cm-modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: .9rem;
+}
+.cm-modal h3 { font-size: 1rem; font-weight: 700; margin: 0; }
+.cm-close {
+    background: none; border: none; font-size: 1.5rem; line-height: 1;
+    cursor: pointer; color: light-dark(#545b64, #94a3b8);
+    padding: 0 .25rem;
+}
+.cm-close:hover { color: light-dark(#16191f, #f1f5f9); }
+
+.cm-search {
+    width: 100%;
+    padding: .45rem .65rem;
+    border-radius: .55rem;
+    border: 1px solid light-dark(#aab7b8, rgba(100,116,139,.55));
+    background: light-dark(#ffffff, rgba(15,23,42,.6));
+    color: light-dark(#16191f, #f1f5f9);
+    font-size: .85rem; outline: none;
+    margin-bottom: .75rem;
+    box-sizing: border-box;
+}
+.cm-search:focus { border-color: #2563eb; }
+
+.cm-list {
+    overflow-y: auto;
+    flex: 1;
+    border: 1px solid light-dark(#e5e7eb, rgba(71,85,105,.4));
+    border-radius: .55rem;
+    padding: .25rem 0;
+    background: light-dark(#fafafa, rgba(15,23,42,.4));
+}
+
+.cm-row {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .5rem .85rem;
+    cursor: pointer;
+    font-size: .85rem;
+    border-bottom: 1px solid transparent;
+    user-select: none;
+}
+.cm-row:hover { background: light-dark(rgba(0,0,0,.04), rgba(255,255,255,.04)); }
+.cm-row input[type=checkbox] {
+    width: 1rem; height: 1rem;
+    accent-color: #2563eb;
+    cursor: pointer;
+}
+.cm-row input[disabled] { cursor: not-allowed; }
+
+.cm-pin {
+    display: inline-block;
+    margin-inline-start: .5rem;
+    font-size: .65rem;
+    text-transform: uppercase; letter-spacing: .06em;
+    color: light-dark(#9ca3af, #64748b);
+    background: light-dark(rgba(0,0,0,.04), rgba(255,255,255,.05));
+    padding: .1rem .45rem; border-radius: 999px;
+}
+
+.cm-modal-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 1rem; gap: .5rem;
+}
+.cm-btn {
+    display: inline-flex; align-items: center; gap: .35rem;
+    padding: .45rem 1rem;
+    border-radius: .55rem;
+    border: 1px solid light-dark(#aab7b8, rgba(100,116,139,.55));
+    background: light-dark(#ffffff, rgba(30,41,59,.5));
+    color: light-dark(#16191f, #f1f5f9);
+    font-size: .85rem; font-weight: 600; cursor: pointer;
+    transition: background .15s;
+}
+.cm-btn:hover { background: light-dark(#f7f8f8, rgba(255,255,255,.08)); }
+.cm-btn-primary {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+}
+.cm-btn-primary:hover { background: #1d4ed8; }
+.cm-btn-link {
+    background: transparent;
+    border-color: transparent;
+    color: light-dark(#6b7280, #94a3b8);
+    text-decoration: underline;
+}
+.cm-btn-link:hover { background: transparent; color: light-dark(#16191f, #f1f5f9); }

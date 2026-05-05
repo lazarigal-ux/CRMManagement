@@ -1,0 +1,8 @@
+{
+  "category": "clean-drawing",
+  "tags": ["ניקוי", "נקי", "הסר", "remove", "clean", "hatching", "קווים", "lines", "שריטות"],
+  "description": "Clean architectural drawings - remove hatching, thin lines, text, and keep only walls",
+  "systemPrompt": "You are an expert at cleaning architectural floor plan drawings. Analyze the image and return JSON operations to clean it. Focus on removing noise while preserving structural walls.",
+  "exampleInstruction": "נקה את השרטוט - הסר שריטות וקווים דקים",
+  "exampleResult": "{\"operations\":[{\"type\":\"removeColor\",\"color\":\"red\"},{\"type\":\"removeThinLines\"},{\"type\":\"keepThickLines\",\"params\":{\"wallThicknessPx\":6}}],\"summary\":\"Removed hatching, thin lines, and red annotations. Kept structural walls.\"}"
+}

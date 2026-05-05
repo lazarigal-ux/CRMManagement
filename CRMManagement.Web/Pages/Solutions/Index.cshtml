@@ -1,0 +1,88 @@
+@page
+@model CRMManagement.Web.Pages.Solutions.IndexModel
+@{ ViewData["Title"] = "Solutions"; }
+
+<section class="p-4 space-y-4 text-slate-200">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-100">Solutions</h1>
+            <p class="text-xs text-slate-400 mt-1">Knowledge-base entries (Q&amp;A pairs). Synced from Zoho's <code class="text-sky-300">Solutions</code> module.</p>
+        </div>
+        <a asp-page="/Solutions/Upsert" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm">
+            <i class="fa-solid fa-plus text-xs"></i> New
+        </a>
+    </div>
+
+    <form method="get" class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-3 flex flex-wrap items-end gap-3">
+        <div class="flex-1 min-w-[12rem]">
+            <label class="block text-xs text-slate-400 mb-1">Search</label>
+            <input name="Search" value="@Model.Search" placeholder="title / number / category"
+                   class="w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-1.5 text-sm" />
+        </div>
+        <label class="inline-flex items-center gap-2 text-sm">
+            <input type="checkbox" name="PublishedOnly" value="true" @(Model.PublishedOnly == true ? "checked" : "") class="rounded border-slate-600 bg-slate-900" />
+            <span>Published only</span>
+        </label>
+        <button type="submit" class="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-sm">Search</button>
+        <a asp-page="/Solutions/Index" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm">Reset</a>
+    </form>
+
+    <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 overflow-hidden">
+        <table data-cm-table="solutions" class="min-w-full text-sm">
+            <thead class="text-xs text-slate-400 uppercase bg-slate-900/40">
+                <tr>
+                    <th class="text-left px-3 py-2">#</th>
+                    <th class="text-left px-3 py-2">Title</th>
+                    <th class="text-left px-3 py-2">Category</th>
+                    <th class="text-left px-3 py-2">Status</th>
+                    <th class="text-left px-3 py-2">Published</th>
+                    @* Extra Zoho fields — default-hidden, surfaced via the "Columns" picker *@
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Question</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Answer</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Product</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Comments</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Owner</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Created (Zoho)</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Modified (Zoho)</th>
+                    <th class="px-3 py-2"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700/40">
+                @if (Model.Items.Count == 0)
+                {
+                    <tr><td colspan="13" class="px-3 py-6 text-center text-slate-400">No solutions found.</td></tr>
+                }
+                @foreach (var s in Model.Items)
+                {
+                    var solQuestion = string.IsNullOrWhiteSpace(s.Question) ? "—" : (s.Question!.Length > 80 ? s.Question.Substring(0, 80) + "…" : s.Question);
+                    var solAnswer   = string.IsNullOrWhiteSpace(s.Answer)   ? "—" : (s.Answer!.Length   > 80 ? s.Answer.Substring(0, 80)   + "…" : s.Answer);
+                    var solComments = string.IsNullOrWhiteSpace(s.Comments) ? "—" : (s.Comments!.Length > 80 ? s.Comments.Substring(0, 80) + "…" : s.Comments);
+                    var solZCreated = s.ZohoCreatedTime?.ToString("yyyy-MM-dd HH:mm") ?? "—";
+                    var solZMod     = s.ZohoModifiedTime?.ToString("yyyy-MM-dd HH:mm") ?? "—";
+                    <tr class="hover:bg-slate-700/30">
+                        <td class="px-3 py-2 font-mono text-slate-300">@s.SolutionNumber</td>
+                        <td class="px-3 py-2 font-medium text-slate-100">@s.Title</td>
+                        <td class="px-3 py-2 text-slate-300">@s.Category</td>
+                        <td class="px-3 py-2"><span class="px-2 py-0.5 rounded-full text-xs bg-slate-700/40 text-slate-200 border border-slate-600/40">@s.Status</span></td>
+                        <td class="px-3 py-2">
+                            @if (s.Published)
+                            { <span class="px-2 py-0.5 rounded-full text-xs bg-emerald-900/40 text-emerald-300 border border-emerald-700/40">Yes</span> }
+                            else
+                            { <span class="px-2 py-0.5 rounded-full text-xs bg-slate-700/40 text-slate-300 border border-slate-600/40">No</span> }
+                        </td>
+                        <td class="px-3 py-2 text-slate-300" title="@(s.Question ?? "")">@solQuestion</td>
+                        <td class="px-3 py-2 text-slate-300" title="@(s.Answer ?? "")">@solAnswer</td>
+                        <td class="px-3 py-2 text-slate-300">@(s.ProductName ?? "—")</td>
+                        <td class="px-3 py-2 text-slate-300" title="@(s.Comments ?? "")">@solComments</td>
+                        <td class="px-3 py-2 text-slate-300">@(s.OwnerName ?? "—")</td>
+                        <td class="px-3 py-2 text-slate-400 whitespace-nowrap">@solZCreated</td>
+                        <td class="px-3 py-2 text-slate-400 whitespace-nowrap">@solZMod</td>
+                        <td class="px-3 py-2 text-right">
+                            <a asp-page="/Solutions/Details" asp-route-id="@s.Id" class="text-xs text-sky-300 hover:underline">Details</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

@@ -1,0 +1,70 @@
+@page
+@model CRMManagement.Web.Pages.Notes.IndexModel
+@{ ViewData["Title"] = "Notes"; }
+
+<section class="p-4 space-y-4 text-slate-200">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-100">Notes</h1>
+            <p class="text-xs text-slate-400 mt-1">Free-form notes attached to records. Synced from Zoho's <code class="text-sky-300">Notes</code> module.</p>
+        </div>
+    </div>
+
+    <form method="get" class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-3 flex flex-wrap items-end gap-3">
+        <div class="flex-1 min-w-[12rem]">
+            <label class="block text-xs text-slate-400 mb-1">Search</label>
+            <input name="Search" value="@Model.Search" placeholder="title or body"
+                   class="w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-1.5 text-sm" />
+        </div>
+        <div class="min-w-[10rem]">
+            <label class="block text-xs text-slate-400 mb-1">Related to</label>
+            <select name="RelatedType" class="w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-1.5 text-sm">
+                <option value="">All</option>
+                <option value="Account"      selected="@(Model.RelatedType == "Account")">Account</option>
+                <option value="Contact"      selected="@(Model.RelatedType == "Contact")">Contact</option>
+                <option value="Lead"         selected="@(Model.RelatedType == "Lead")">Lead</option>
+                <option value="Opportunity"  selected="@(Model.RelatedType == "Opportunity")">Opportunity</option>
+            </select>
+        </div>
+        <button type="submit" class="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-sm">Search</button>
+        <a asp-page="/Notes/Index" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm">Reset</a>
+    </form>
+
+    <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 overflow-hidden">
+        <table data-cm-table="notes" class="min-w-full text-sm">
+            <thead class="text-xs text-slate-400 uppercase bg-slate-900/40">
+                <tr>
+                    <th class="text-left px-3 py-2">Title</th>
+                    <th class="text-left px-3 py-2">Body</th>
+                    <th class="text-left px-3 py-2">Related to</th>
+                    <th class="text-left px-3 py-2">Created</th>
+                    @* Extra Zoho fields — default-hidden, surfaced via the "Columns" picker *@
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Author</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Modified (Zoho)</th>
+                    <th class="px-3 py-2"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700/40">
+                @if (Model.Items.Count == 0)
+                {
+                    <tr><td colspan="7" class="px-3 py-6 text-center text-slate-400">No notes found.</td></tr>
+                }
+                @foreach (var n in Model.Items)
+                {
+                    var noteZMod = n.ZohoModifiedTime?.ToString("yyyy-MM-dd HH:mm") ?? "—";
+                    <tr class="hover:bg-slate-700/30">
+                        <td class="px-3 py-2 font-medium text-slate-100">@(string.IsNullOrEmpty(n.Title) ? "—" : n.Title)</td>
+                        <td class="px-3 py-2 text-slate-300 max-w-xl truncate">@(n.Body.Length > 140 ? n.Body[..140] + "…" : n.Body)</td>
+                        <td class="px-3 py-2 text-slate-300">@n.RelatedType</td>
+                        <td class="px-3 py-2 text-slate-400 whitespace-nowrap">@n.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td class="px-3 py-2 text-slate-300">@(n.AuthorName ?? "—")</td>
+                        <td class="px-3 py-2 text-slate-400 whitespace-nowrap">@noteZMod</td>
+                        <td class="px-3 py-2 text-right">
+                            <a asp-page="/Notes/Details" asp-route-id="@n.Id" class="text-xs text-sky-300 hover:underline">Details</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

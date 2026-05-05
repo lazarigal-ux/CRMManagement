@@ -1,0 +1,45 @@
+@page "{id:guid}"
+@model CRMManagement.Web.Pages.Notes.DetailsModel
+@{
+    ViewData["Title"] = Model.Item?.Title ?? "Note";
+    var n = Model.Item!;
+
+    string? relatedPage = n.RelatedType switch
+    {
+        "Account"     => "/Accounts/Details",
+        "Contact"     => "/Contacts/Details",
+        "Lead"        => "/Leads/Details",
+        "Opportunity" => "/Opportunities/Details",
+        _             => null
+    };
+}
+
+<section class="p-4 space-y-4 text-slate-200 max-w-4xl">
+    <div class="flex items-center justify-between">
+        <div>
+            <a asp-page="/Notes/Index" class="text-xs text-slate-400 hover:underline"><i class="fa-solid fa-arrow-left text-[10px]"></i> Back to Notes</a>
+            <h1 class="text-2xl font-semibold text-slate-100 mt-1">@(string.IsNullOrEmpty(n.Title) ? "(untitled note)" : n.Title)</h1>
+            <p class="text-xs text-slate-400 mt-1">Created @n.CreatedAt.ToString("yyyy-MM-dd HH:mm")</p>
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 space-y-4 text-sm">
+        <div>
+            <div class="text-xs text-slate-400">Related to</div>
+            <div>
+                @if (relatedPage is not null)
+                {
+                    <a asp-page="@relatedPage" asp-route-id="@n.RelatedId" class="text-sky-300 hover:underline">@n.RelatedType #@n.RelatedId.ToString().Substring(0,8)</a>
+                }
+                else
+                {
+                    <span>@n.RelatedType #@n.RelatedId</span>
+                }
+            </div>
+        </div>
+        <div>
+            <div class="text-xs text-slate-400">Body</div>
+            <div class="whitespace-pre-line">@n.Body</div>
+        </div>
+    </div>
+</section>

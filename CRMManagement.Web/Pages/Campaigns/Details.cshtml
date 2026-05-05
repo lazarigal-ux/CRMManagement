@@ -1,0 +1,29 @@
+@page "{id:guid}"
+@model CRMManagement.Web.Pages.Campaigns.DetailsModel
+@{ ViewData["Title"] = "Campaign Details"; }
+
+@if (Model.Item is null)
+{
+    <div class="p-4 text-slate-300">Not found.</div>
+}
+else
+{
+    var c = Model.Item;
+    <section class="p-4 space-y-4">
+        <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-semibold text-slate-100">@c.Name</h1>
+            <a asp-page="/Campaigns/Upsert" asp-route-id="@c.Id" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm">Edit</a>
+        </div>
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-200">
+            <div><span class="text-slate-400">Type:</span> @c.Type</div>
+            <div><span class="text-slate-400">Status:</span> @c.Status</div>
+            <div><span class="text-slate-400">Start:</span> @(c.StartDate?.ToString("yyyy-MM-dd") ?? "-")</div>
+            <div><span class="text-slate-400">End:</span> @(c.EndDate?.ToString("yyyy-MM-dd") ?? "-")</div>
+            <div><span class="text-slate-400">Budget:</span> @c.BudgetedCost</div>
+            <div><span class="text-slate-400">Actual:</span> @c.ActualCost</div>
+            <div><span class="text-slate-400">Expected Revenue:</span> @c.ExpectedRevenue</div>
+            <div class="md:col-span-2"><span class="text-slate-400">Description:</span> @c.Description</div>
+        </div>
+        <partial name="_CustomFields" model='(EntityType: "Campaign", EntityId: Model.Item!.Id)' />
+</section>
+}

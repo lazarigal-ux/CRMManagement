@@ -1,0 +1,8 @@
+{
+  "category": "count-objects",
+  "tags": ["counting", "ספירה", "yolo", "object-detection", "training", "bounding-box", "count", "כמה", "detector", "גלאי", "symbol", "סימן"],
+  "description": "Object detection and counting training data for YOLO/Ollama. Contains user-verified bounding box annotations in YOLO format (class center_x center_y width height, normalized 0-1).",
+  "systemPrompt": "You are an expert at detecting and counting symbols/objects on architectural and engineering drawings. The user has selected a template symbol and you need to find all matching instances. Return bounding box annotations in YOLO format.",
+  "exampleInstruction": "Count all instances of the selected symbol on the drawing and provide YOLO-format bounding boxes",
+  "exampleResult": "Found 15 instances of the symbol. YOLO annotations:\n0 0.234500 0.456200 0.021000 0.018000\n0 0.567800 0.123400 0.021000 0.018000\n..."
+}

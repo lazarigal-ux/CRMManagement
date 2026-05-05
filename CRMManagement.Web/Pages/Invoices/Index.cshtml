@@ -1,0 +1,88 @@
+@page
+@model CRMManagement.Web.Pages.Invoices.IndexModel
+@{ ViewData["Title"] = "Invoices"; }
+
+<section class="p-4 space-y-4 text-slate-200">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-100">Invoices</h1>
+            <p class="text-xs text-slate-400 mt-1">Customer invoices. Synced from Zoho's <code class="text-sky-300">Invoices</code> module.</p>
+        </div>
+    </div>
+
+    <form method="get" class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-3 flex flex-wrap items-end gap-3">
+        <div class="flex-1 min-w-[12rem]">
+            <label class="block text-xs text-slate-400 mb-1">Search</label>
+            <input name="Search" value="@Model.Search" placeholder="invoice number / subject"
+                   class="w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-1.5 text-sm" />
+        </div>
+        <div class="min-w-[10rem]">
+            <label class="block text-xs text-slate-400 mb-1">Status</label>
+            <input name="Status" value="@Model.Status" placeholder="Draft / Sent / Paid"
+                   class="w-full rounded-lg bg-slate-900/60 border border-slate-700/60 px-3 py-1.5 text-sm" />
+        </div>
+        <button type="submit" class="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-sm">Search</button>
+        <a asp-page="/Invoices/Index" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm">Reset</a>
+    </form>
+
+    <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 overflow-hidden">
+        <table data-cm-table="invoices" class="min-w-full text-sm">
+            <thead class="text-xs text-slate-400 uppercase bg-slate-900/40">
+                <tr>
+                    <th class="text-left px-3 py-2">Invoice #</th>
+                    <th class="text-left px-3 py-2">Subject</th>
+                    <th class="text-left px-3 py-2">Status</th>
+                    <th class="text-right px-3 py-2">Total</th>
+                    <th class="text-right px-3 py-2">Paid</th>
+                    <th class="text-left px-3 py-2">Issued</th>
+                    <th class="text-left px-3 py-2">Due</th>
+                    @* Extra Zoho fields — default-hidden, surfaced via the "Columns" picker *@
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Account</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Order #</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Paid At</th>
+                    <th class="text-right px-3 py-2" data-cm-default-hide="1">Subtotal</th>
+                    <th class="text-right px-3 py-2" data-cm-default-hide="1">Tax</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Notes</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Created (Zoho)</th>
+                    <th class="text-left px-3 py-2" data-cm-default-hide="1">Modified (Zoho)</th>
+                    <th class="px-3 py-2"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700/40">
+                @if (Model.Items.Count == 0)
+                {
+                    <tr><td colspan="16" class="px-3 py-6 text-center text-slate-400">No invoices found.</td></tr>
+                }
+                @foreach (var i in Model.Items)
+                {
+                    var invSubtotal = i.Subtotal.HasValue ? i.Subtotal.Value.ToString("N2") : "—";
+                    var invTax      = i.Tax.HasValue ? i.Tax.Value.ToString("N2") : "—";
+                    var invPaid     = i.PaidAt?.ToString("yyyy-MM-dd") ?? "—";
+                    var invNotes    = string.IsNullOrWhiteSpace(i.Notes) ? "—" : (i.Notes!.Length > 80 ? i.Notes.Substring(0, 80) + "…" : i.Notes);
+                    var invZCreated = i.ZohoCreatedTime?.ToString("yyyy-MM-dd HH:mm") ?? "—";
+                    var invZMod     = i.ZohoModifiedTime?.ToString("yyyy-MM-dd HH:mm") ?? "—";
+                    <tr class="hover:bg-slate-700/30">
+                        <td class="px-3 py-2 font-medium text-slate-100">@i.InvoiceNumber</td>
+                        <td class="px-3 py-2 text-slate-300">@(string.IsNullOrEmpty(i.Subject) ? "—" : i.Subject)</td>
+                        <td class="px-3 py-2 text-slate-300">@i.Status</td>
+                        <td class="px-3 py-2 text-right text-slate-100 whitespace-nowrap">@i.Total.ToString("N2") @i.Currency</td>
+                        <td class="px-3 py-2 text-right text-slate-300 whitespace-nowrap">@i.AmountPaid.ToString("N2")</td>
+                        <td class="px-3 py-2 text-slate-400 whitespace-nowrap">@i.IssueDate.ToString("yyyy-MM-dd")</td>
+                        <td class="px-3 py-2 text-slate-400 whitespace-nowrap">@(i.DueDate?.ToString("yyyy-MM-dd") ?? "—")</td>
+                        <td class="px-3 py-2 text-slate-300">@(i.AccountName ?? "—")</td>
+                        <td class="px-3 py-2 text-slate-300">@(i.OrderNumber ?? "—")</td>
+                        <td class="px-3 py-2 text-slate-400 whitespace-nowrap">@invPaid</td>
+                        <td class="px-3 py-2 text-right text-slate-300 whitespace-nowrap">@invSubtotal</td>
+                        <td class="px-3 py-2 text-right text-slate-300 whitespace-nowrap">@invTax</td>
+                        <td class="px-3 py-2 text-slate-300" title="@(i.Notes ?? "")">@invNotes</td>
+                        <td class="px-3 py-2 text-slate-400 whitespace-nowrap">@invZCreated</td>
+                        <td class="px-3 py-2 text-slate-400 whitespace-nowrap">@invZMod</td>
+                        <td class="px-3 py-2 text-right">
+                            <a asp-page="/Invoices/Details" asp-route-id="@i.Id" class="text-xs text-sky-300 hover:underline">Details</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

@@ -1,0 +1,146 @@
+@page
+@model CRMManagement.Web.Pages.Admin.AiQualityModel
+@{ ViewData["Title"] = "AI Quality"; }
+
+<section class="p-4 space-y-4 text-slate-200">
+    <header>
+        <h1 class="text-2xl font-semibold text-slate-100">AI Quality (last 30 days)</h1>
+        <p class="text-xs text-slate-400 mt-1">Aggregated from <code>crm_ai_interaction_log</code>. Use thumbs feedback in the AI Assistant to fill this page.</p>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4">
+            <div class="text-xs uppercase tracking-wide text-slate-400">Total calls</div>
+            <div class="mt-1 text-2xl font-bold text-slate-100">@Model.TotalCalls</div>
+        </div>
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4">
+            <div class="text-xs uppercase tracking-wide text-emerald-300">Success rate</div>
+            <div class="mt-1 text-2xl font-bold text-emerald-200">@Model.SuccessRatePct%</div>
+        </div>
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4">
+            <div class="text-xs uppercase tracking-wide text-rose-300">Flagged (👎)</div>
+            <div class="mt-1 text-2xl font-bold text-rose-200">@Model.FlaggedCount</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-3">By mode</h2>
+            @if (Model.ByMode.Count == 0)
+            {
+                <p class="text-xs text-slate-400">No data.</p>
+            }
+            else
+            {
+                <table class="min-w-full text-sm">
+                    <thead class="text-xs text-slate-400 uppercase">
+                        <tr>
+                            <th class="text-left py-2">Mode</th>
+                            <th class="text-right py-2">Total</th>
+                            <th class="text-right py-2">OK</th>
+                            <th class="text-right py-2">Fail</th>
+                            <th class="text-right py-2">👍</th>
+                            <th class="text-right py-2">👎</th>
+                            <th class="text-right py-2">★</th>
+                            <th class="text-right py-2">avg ms</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-700/40">
+                        @foreach (var r in Model.ByMode)
+                        {
+                            <tr>
+                                <td class="py-2">@r.Mode</td>
+                                <td class="py-2 text-right">@r.Total</td>
+                                <td class="py-2 text-right text-emerald-300">@r.Success</td>
+                                <td class="py-2 text-right text-rose-300">@r.Failed</td>
+                                <td class="py-2 text-right">@r.Up</td>
+                                <td class="py-2 text-right">@r.Down</td>
+                                <td class="py-2 text-right text-amber-300">@r.Perfect</td>
+                                <td class="py-2 text-right text-slate-400">@(r.AvgMs?.ToString() ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-3">By provider</h2>
+            @if (Model.ByProvider.Count == 0)
+            {
+                <p class="text-xs text-slate-400">No data.</p>
+            }
+            else
+            {
+                <table class="min-w-full text-sm">
+                    <thead class="text-xs text-slate-400 uppercase">
+                        <tr>
+                            <th class="text-left py-2">Provider</th>
+                            <th class="text-right py-2">Total</th>
+                            <th class="text-right py-2">Failed</th>
+                            <th class="text-right py-2">avg ms</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-700/40">
+                        @foreach (var r in Model.ByProvider)
+                        {
+                            <tr>
+                                <td class="py-2">@r.Provider</td>
+                                <td class="py-2 text-right">@r.Total</td>
+                                <td class="py-2 text-right text-rose-300">@r.Failed</td>
+                                <td class="py-2 text-right text-slate-400">@(r.AvgMs?.ToString() ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-3">Recent calls</h2>
+        @if (Model.Recent.Count == 0)
+        {
+            <p class="text-xs text-slate-400">No recent calls.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="text-xs text-slate-400 uppercase">
+                        <tr>
+                            <th class="text-left py-2">When</th>
+                            <th class="text-left py-2">Mode</th>
+                            <th class="text-left py-2">Provider</th>
+                            <th class="text-left py-2">Status</th>
+                            <th class="text-left py-2">Feedback</th>
+                            <th class="text-left py-2">Instruction</th>
+                            <th class="text-left py-2">Result</th>
+                            <th class="text-right py-2">ms</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-700/40">
+                        @foreach (var r in Model.Recent)
+                        {
+                            <tr class="@(r.Feedback < 0 ? "bg-rose-900/10" : "")">
+                                <td class="py-2 text-slate-400 whitespace-nowrap">@r.CreatedAt.ToString("MM-dd HH:mm")</td>
+                                <td class="py-2 text-slate-300">@r.Mode</td>
+                                <td class="py-2 text-slate-300">@r.Provider</td>
+                                <td class="py-2 @(r.Success ? "text-emerald-300" : "text-rose-300")">@(r.Success ? "OK" : "FAIL")</td>
+                                <td class="py-2">
+                                    @if (r.Feedback == 1) { <span class="text-emerald-300">👍</span> }
+                                    else if (r.Feedback == 2) { <span class="text-amber-300">★</span> }
+                                    else if (r.Feedback == -1) { <span class="text-rose-300">👎</span> }
+                                    else { <span class="text-slate-500">—</span> }
+                                </td>
+                                <td class="py-2 text-slate-200 max-w-xs truncate" title="@r.Instruction">@r.Instruction</td>
+                                <td class="py-2 text-slate-300 max-w-xs truncate" title="@r.ResultText">@r.ResultText</td>
+                                <td class="py-2 text-right text-slate-400">@(r.TotalMs?.ToString() ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>

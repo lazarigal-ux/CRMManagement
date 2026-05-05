@@ -1,0 +1,156 @@
+@*
+    AI Assistant sidebar — pass the entity kind + id via ViewData:
+        @{ ViewData["AiAssistantKind"] = "Opportunity"; ViewData["AiAssistantId"] = Model.Item!.Id; }
+        <partial name="_AiAssistantSidebar" />
+
+    Renders: a panel with Summarize / Draft Email / Draft WhatsApp / Next Action buttons,
+    a streaming-like result area, and a thumbs feedback row that POSTs to
+    /api/ai/assistant/{logId}/feedback.
+*@
+@{
+    var aiKind = (ViewData["AiAssistantKind"] as string) ?? "";
+    var aiId   = ViewData["AiAssistantId"]?.ToString() ?? "";
+}
+@if (!string.IsNullOrEmpty(aiKind) && !string.IsNullOrEmpty(aiId))
+{
+<aside class="ai-assistant rounded-2xl border border-slate-700/50 bg-slate-800/60 p-4 text-sm text-slate-200"
+       data-entity-kind="@aiKind"
+       data-entity-id="@aiId">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-base font-semibold text-slate-100 flex items-center gap-2">
+            <span class="inline-block h-2 w-2 rounded-full bg-emerald-400"></span>
+            AI Assistant
+        </h3>
+        <span class="text-xs text-slate-400 ai-assistant__provider"></span>
+    </div>
+
+    <div class="grid grid-cols-2 gap-2 mb-3">
+        <button type="button" class="ai-assistant__btn rounded-lg bg-slate-700/70 hover:bg-slate-600 px-3 py-2 text-xs"
+                data-action="Summarize">Summarize</button>
+        <button type="button" class="ai-assistant__btn rounded-lg bg-slate-700/70 hover:bg-slate-600 px-3 py-2 text-xs"
+                data-action="NextBestAction">Next action</button>
+        <button type="button" class="ai-assistant__btn rounded-lg bg-slate-700/70 hover:bg-slate-600 px-3 py-2 text-xs"
+                data-action="DraftFollowUpEmail">Draft email</button>
+        <button type="button" class="ai-assistant__btn rounded-lg bg-slate-700/70 hover:bg-slate-600 px-3 py-2 text-xs"
+                data-action="DraftFollowUpWhatsApp">Draft WhatsApp</button>
+    </div>
+
+    <textarea class="ai-assistant__hint w-full mb-3 rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-xs"
+              rows="2" placeholder="Optional hint (e.g. 'mention the discount we discussed')"></textarea>
+
+    <div class="ai-assistant__status text-xs text-slate-400 mb-2 hidden">Thinking…</div>
+    <div class="ai-assistant__subject hidden mb-2 text-xs text-slate-400">
+        <span class="font-medium text-slate-300">Subject: </span><span class="ai-assistant__subject-text"></span>
+    </div>
+    <div class="ai-assistant__output rounded-lg border border-slate-700/50 bg-slate-900/40 px-3 py-3 whitespace-pre-wrap leading-relaxed min-h-[6rem] text-slate-100"></div>
+    <div class="ai-assistant__error hidden mt-2 text-xs text-rose-300"></div>
+
+    <div class="ai-assistant__feedback hidden mt-3 flex items-center gap-2 text-xs text-slate-400">
+        <span>Was this useful?</span>
+        <button type="button" class="ai-assistant__fb px-2 py-1 rounded bg-slate-700/60 hover:bg-slate-600" data-rating="1">👍</button>
+        <button type="button" class="ai-assistant__fb px-2 py-1 rounded bg-slate-700/60 hover:bg-slate-600" data-rating="-1">👎</button>
+        <button type="button" class="ai-assistant__copy ml-auto px-2 py-1 rounded bg-blue-700/60 hover:bg-blue-600">Copy</button>
+    </div>
+</aside>
+
+<script>
+(function () {
+    var root = document.currentScript.previousElementSibling;
+    if (!root || !root.classList || !root.classList.contains('ai-assistant')) {
+        // Defensive: walk back to find the aside.
+        root = document.querySelector('aside.ai-assistant[data-entity-kind][data-entity-id]:not([data-bound])');
+    }
+    if (!root) return;
+    if (root.dataset.bound === '1') return;
+    root.dataset.bound = '1';
+
+    var kind = root.dataset.entityKind;
+    var id   = root.dataset.entityId;
+
+    var output    = root.querySelector('.ai-assistant__output');
+    var status    = root.querySelector('.ai-assistant__status');
+    var errorEl   = root.querySelector('.ai-assistant__error');
+    var providerEl= root.querySelector('.ai-assistant__provider');
+    var subjectEl = root.querySelector('.ai-assistant__subject');
+    var subjectTxt= root.querySelector('.ai-assistant__subject-text');
+    var fbBar     = root.querySelector('.ai-assistant__feedback');
+    var hint      = root.querySelector('.ai-assistant__hint');
+    var copyBtn   = root.querySelector('.ai-assistant__copy');
+    var lastLogId = null;
+
+    root.querySelectorAll('.ai-assistant__btn').forEach(function (btn) {
+        btn.addEventListener('click', function () { run(btn.dataset.action); });
+    });
+
+    root.querySelectorAll('.ai-assistant__fb').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            if (!lastLogId) return;
+            fetch('/api/ai/assistant/' + lastLogId + '/feedback?rating=' + btn.dataset.rating, {
+                method: 'POST'
+            }).then(function () { btn.classList.add('ring-2', 'ring-emerald-400/60'); });
+        });
+    });
+
+    if (copyBtn) {
+        copyBtn.addEventListener('click', function () {
+            var text = output.innerText || '';
+            if (subjectTxt && subjectTxt.textContent) text = 'Subject: ' + subjectTxt.textContent + '\n\n' + text;
+            navigator.clipboard.writeText(text).then(function () {
+                copyBtn.textContent = 'Copied';
+                setTimeout(function () { copyBtn.textContent = 'Copy'; }, 1500);
+            });
+        });
+    }
+
+    function run(action) {
+        output.textContent = '';
+        errorEl.classList.add('hidden');
+        subjectEl.classList.add('hidden');
+        fbBar.classList.add('hidden');
+        status.classList.remove('hidden');
+        providerEl.textContent = '';
+
+        fetch('/api/ai/assistant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                entityKind: kind,
+                entityId: id,
+                action: action,
+                userHint: hint && hint.value ? hint.value : null
+            })
+        }).then(function (r) {
+            return r.json().then(function (j) { return { ok: r.ok, body: j }; });
+        }).then(function (res) {
+            status.classList.add('hidden');
+            if (!res.ok) {
+                errorEl.textContent = (res.body && res.body.error) ? res.body.error : 'Request failed.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            var b = res.body || {};
+            if (b.text && /^Could not connect|AiGateway/i.test(b.text)) {
+                // pass-through error text from the server
+            }
+            if (!b.text) {
+                errorEl.textContent = 'AI returned no text. Check AiGateway configuration.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            output.textContent = b.text;
+            if (b.subject) {
+                subjectTxt.textContent = b.subject;
+                subjectEl.classList.remove('hidden');
+            }
+            if (b.provider) providerEl.textContent = b.provider + (b.totalMs ? ' · ' + b.totalMs + 'ms' : '');
+            lastLogId = b.interactionLogId;
+            fbBar.classList.remove('hidden');
+        }).catch(function (e) {
+            status.classList.add('hidden');
+            errorEl.textContent = 'Network error: ' + (e && e.message ? e.message : e);
+            errorEl.classList.remove('hidden');
+        });
+    }
+})();
+</script>
+}

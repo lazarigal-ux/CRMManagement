@@ -1,0 +1,224 @@
+@page
+@model CRMManagement.Web.Pages.Reports.IndexModel
+@{ ViewData["Title"] = "Reports"; }
+
+<section class="crm-rpt-page w-full mt-2 space-y-3" data-page="crm-reports">
+    <style>
+        .crm-rpt-page {
+            box-sizing: border-box;
+            max-width: 100%;
+            overflow-x: hidden;
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        .app-content:has(.crm-rpt-page) { overflow-x: hidden !important; max-width: 100vw; }
+        .app-main:has(.crm-rpt-page) {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            overflow-x: hidden !important;
+            max-width: 100%;
+        }
+
+        .crm-rpt-shell { overflow: hidden; max-width: 100%; box-sizing: border-box; }
+        .crm-rpt-content { padding: 1.5rem; max-width: 100%; box-sizing: border-box; }
+
+        .crm-rpt-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            column-gap: 0.75rem;
+            row-gap: 2rem;
+            max-width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 0.25rem;
+        }
+        .crm-rpt-kpi-grid > div { width: 100%; min-width: 0; overflow: hidden; }
+
+        .crm-rpt-panel { padding: 1.25rem; }
+
+        #rptStageTable { border-collapse: collapse; }
+        #rptStageTable th, #rptStageTable td { border-right: 1px solid rgba(148,163,184,.2) !important; }
+        #rptStageTable th:last-child, #rptStageTable td:last-child { border-right: none !important; }
+        #rptStageTable tbody td { border-bottom: 1px solid rgba(148,163,184,.25) !important; }
+        #rptStageTable thead th { border-bottom: 1px solid rgba(148,163,184,.35) !important; }
+
+        @@media (max-width: 1300px) {
+            .crm-rpt-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @@media (max-width: 700px) {
+            .crm-rpt-kpi-grid { grid-template-columns: 1fr; }
+        }
+        @@media (max-width: 640px) {
+            .app-main:has(.crm-rpt-page) {
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+                padding-top: 0.5rem !important;
+            }
+            .crm-rpt-page { padding-left: 0 !important; padding-right: 0 !important; margin-top: 0; }
+            .crm-rpt-shell { border-left: 0; border-right: 0; border-radius: 0; }
+            .crm-rpt-shell > div:first-child { padding-left: 0.9rem; padding-right: 0.9rem; }
+            .crm-rpt-content { padding: 0.9rem; }
+            .crm-rpt-kpi-grid { gap: 0.75rem; }
+            .crm-rpt-panel { padding: 0.9rem; }
+        }
+
+        /* ── GRAY theme ── */
+        html[data-theme="gray"] .crm-rpt-kpi-grid > div,
+        html[data-theme="gray"] .crm-rpt-panel {
+            background-color: rgba(255,255,255,.10) !important;
+            border-color: rgba(148,163,184,.45) !important;
+            box-shadow: 0 6px 24px -4px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.07) !important;
+        }
+
+        /* ── LIGHT theme ── */
+        html[data-theme="light"] .crm-rpt-kpi-grid > div,
+        html[data-theme="light"] .crm-rpt-panel {
+            box-shadow: 0 6px 24px -4px rgba(0,0,0,.15), 0 0 0 1px rgba(0,0,0,.06) !important;
+        }
+        html[data-theme="light"] #rptStageTable thead tr:first-child {
+            background: #f7f8f8 !important; color: #16191f !important;
+        }
+        html[data-theme="light"] #rptStageTable tbody tr { color: #16191f !important; }
+        html[data-theme="light"] #rptStageTable tbody tr:hover { background: rgba(0,0,0,.03) !important; }
+
+        /* ── BLACK theme ── */
+        html[data-theme="black"] .crm-rpt-shell {
+            background: #0a0a0a !important; border-color: rgba(255,255,255,.08) !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,.6) !important; color: #e4e4e7 !important;
+        }
+        html[data-theme="black"] .crm-rpt-shell > div:first-child { border-bottom-color: rgba(255,255,255,.06) !important; }
+        html[data-theme="black"] .crm-rpt-kpi-grid > div,
+        html[data-theme="black"] .crm-rpt-panel {
+            background-color: rgba(255,255,255,.02) !important;
+            border-color: rgba(255,255,255,.05) !important;
+            box-shadow: 0 6px 24px -4px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04) !important;
+        }
+        html[data-theme="black"] #rptStageTable thead tr:first-child {
+            background: rgba(255,255,255,.04) !important;
+        }
+        html[data-theme="black"] #rptStageTable tbody tr:hover { background: rgba(255,255,255,.06) !important; }
+
+        /* ── Mobile card-table ── */
+        @@media (max-width: 768px) {
+            .crm-rpt-table thead { display: none; }
+            .crm-rpt-table, .crm-rpt-table tbody, .crm-rpt-table tr, .crm-rpt-table td { display: block; width: 100%; box-sizing: border-box; }
+            .crm-rpt-table tr { padding: 0.75rem 1rem; border-bottom: 1px solid rgba(82,82,91,.35); }
+            .crm-rpt-table td { padding: 0.2rem 0; white-space: normal !important; }
+            .crm-rpt-table td::before {
+                content: attr(data-label);
+                display: block; font-size: 0.65rem; font-weight: 600;
+                text-transform: uppercase; letter-spacing: 0.12em;
+                color: light-dark(#545b64, #a1a1aa); margin-bottom: 0.15rem;
+            }
+        }
+    </style>
+
+    @if (Model.Summary is null)
+    {
+        <div class="rounded-2xl border p-6" style="background:light-dark(#ffffff, rgb(51,65,85));border-color:light-dark(#d5dbdb, rgba(71,85,105,.5));color:light-dark(#16191f, #cbd5e1)">Loading...</div>
+    }
+    else
+    {
+        var s = Model.Summary;
+
+        <div class="crm-rpt-shell rounded-2xl border overflow-hidden"
+             style="background:light-dark(#ffffff, rgb(51,65,85));
+                    border-color:light-dark(#d5dbdb, rgba(71,85,105,.5));
+                    box-shadow:light-dark(0 1px 4px rgba(0,0,0,.1), 0 2px 8px rgba(0,0,0,.35));
+                    color:light-dark(#16191f, #f1f5f9)">
+
+            <!-- ── Header ── -->
+            <div class="flex flex-wrap items-center gap-3 px-4 py-3"
+                 style="border-bottom:1px solid light-dark(#d5dbdb, rgba(255,255,255,.08))">
+                <i class="fa-solid fa-chart-pie text-sm" style="color:light-dark(#0073bb, #3b82f6)"></i>
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold uppercase tracking-wider"
+                        style="color:light-dark(#545b64, #cbd5e1)">Reports</h3>
+                    <div class="mt-0.5 text-xs" style="color:light-dark(#687078, #94a3b8)">Pipeline summary, stage breakdown, and key metrics.</div>
+                </div>
+            </div>
+
+            <!-- ── Content ── -->
+            <div class="crm-rpt-content" style="display:flex;flex-direction:column;gap:0.85rem;">
+
+                <!-- ── KPI Summary Grid ── -->
+                <div class="crm-rpt-kpi-grid">
+                    <div class="rounded-xl border px-4 py-4"
+                         style="background-color:light-dark(#e8eef5, rgba(255,255,255,.06));border-color:light-dark(#adb8c4, rgba(255,255,255,.10));box-shadow:light-dark(0 2px 8px rgba(0,0,0,.08), 0 2px 10px rgba(0,0,0,.25))">
+                        <div class="text-xs uppercase tracking-wide font-semibold" style="color:light-dark(#0073bb, #7dd3fc)">Total Pipeline</div>
+                        <div class="mt-1 text-2xl font-bold leading-tight" style="color:light-dark(#16191f, #f8fafc)">@s.TotalPipelineAmount.ToString("N2")</div>
+                    </div>
+                    <div class="rounded-xl border px-4 py-4"
+                         style="background-color:light-dark(#e8eef5, rgba(255,255,255,.06));border-color:light-dark(#adb8c4, rgba(255,255,255,.10));box-shadow:light-dark(0 2px 8px rgba(0,0,0,.08), 0 2px 10px rgba(0,0,0,.25))">
+                        <div class="text-xs uppercase tracking-wide font-semibold" style="color:light-dark(#0073bb, #7dd3fc)">Won This Month</div>
+                        <div class="mt-1 text-2xl font-bold leading-tight" style="color:light-dark(#16191f, #f8fafc)">@s.WonAmountThisMonth.ToString("N2")</div>
+                    </div>
+                    <div class="rounded-xl border px-4 py-4"
+                         style="background-color:light-dark(#e8eef5, rgba(255,255,255,.06));border-color:light-dark(#adb8c4, rgba(255,255,255,.10));box-shadow:light-dark(0 2px 8px rgba(0,0,0,.08), 0 2px 10px rgba(0,0,0,.25))">
+                        <div class="text-xs uppercase tracking-wide font-semibold" style="color:light-dark(#0073bb, #7dd3fc)">Open Leads</div>
+                        <div class="mt-1 text-2xl font-bold leading-tight" style="color:light-dark(#16191f, #f8fafc)">@s.OpenLeads</div>
+                    </div>
+                    <div class="rounded-xl border px-4 py-4"
+                         style="background-color:light-dark(#e8eef5, rgba(255,255,255,.06));border-color:light-dark(#adb8c4, rgba(255,255,255,.10));box-shadow:light-dark(0 2px 8px rgba(0,0,0,.08), 0 2px 10px rgba(0,0,0,.25))">
+                        <div class="text-xs uppercase tracking-wide font-semibold" style="color:light-dark(#0073bb, #7dd3fc)">Open Tickets</div>
+                        <div class="mt-1 text-2xl font-bold leading-tight" style="color:light-dark(#16191f, #f8fafc)">@s.OpenTickets</div>
+                    </div>
+                </div>
+
+                <!-- ── Pipeline by Stage Panel ── -->
+                <div class="crm-rpt-panel rounded-2xl border overflow-hidden"
+                     style="background-color:light-dark(#e8eef5, rgba(255,255,255,.03));border-color:light-dark(#adb8c4, rgba(255,255,255,.06));padding:0;">
+
+                    <div class="flex items-center gap-3 px-5 py-4"
+                         style="border-bottom:1px solid light-dark(#d5dbdb, rgba(255,255,255,.08))">
+                        <i class="fa-solid fa-layer-group text-sm" style="color:light-dark(#0073bb, #3b82f6)"></i>
+                        <h3 class="text-sm font-semibold uppercase tracking-[0.18em]" style="color:light-dark(#545b64, #cbd5e1)">Pipeline by Stage</h3>
+                        <span class="ml-auto inline-flex items-center gap-1 rounded-full px-3 py-0.5 text-xs font-semibold"
+                              style="background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:light-dark(#0073bb, rgb(96 165 250))">
+                            <i class="fa-solid fa-hashtag" style="font-size:9px"></i>@Model.StageTotals.Count
+                        </span>
+                    </div>
+
+                    @if (Model.StageTotals.Count == 0)
+                    {
+                        <div class="p-5 text-sm" style="color:light-dark(#687078, #94a3b8)">No stage data available.</div>
+                    }
+                    else
+                    {
+                        <div class="overflow-x-auto">
+                            <table id="rptStageTable" class="crm-rpt-table min-w-full text-sm">
+                                <thead>
+                                    <tr style="background:light-dark(#f7f8f8, rgba(30,41,59,.8));color:light-dark(#16191f, #f1f5f9)" class="text-[11px] uppercase tracking-wide select-none">
+                                        <th class="px-4 py-3 text-left whitespace-nowrap">
+                                            <span class="inline-flex items-center gap-2"><i class="fa-solid fa-layer-group text-[10px]"></i><span>Stage</span></span>
+                                        </th>
+                                        <th class="px-4 py-3 text-left whitespace-nowrap">
+                                            <span class="inline-flex items-center gap-2"><i class="fa-solid fa-tally text-[10px]"></i><span>Count</span></span>
+                                        </th>
+                                        <th class="px-4 py-3 text-left whitespace-nowrap">
+                                            <span class="inline-flex items-center gap-2"><i class="fa-solid fa-dollar-sign text-[10px]"></i><span>Total</span></span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var st in Model.StageTotals)
+                                    {
+                                        <tr class="hover:opacity-90 transition-colors" style="border-top:1px solid light-dark(#e5e7eb, rgba(71,85,105,.5))">
+                                            <td data-label="Stage" class="px-4 py-3 text-xs font-medium whitespace-nowrap" style="color:light-dark(#16191f, #f1f5f9)">@st.StageName</td>
+                                            <td data-label="Count" class="px-4 py-3 text-xs whitespace-nowrap">
+                                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold"
+                                                      style="background:rgba(59,130,246,.12);color:light-dark(#0073bb, #7dd3fc)">@st.Count</span>
+                                            </td>
+                                            <td data-label="Total" class="px-4 py-3 text-xs font-semibold whitespace-nowrap" style="color:light-dark(#16191f, #f1f5f9)">@st.Total.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+
+            </div>
+        </div>
+    }
+</section>
