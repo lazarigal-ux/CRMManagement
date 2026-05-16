@@ -67,10 +67,15 @@ public sealed class DbInitializer
 
     private async Task SeedAdminUserAsync(CancellationToken ct)
     {
-        var anyUsers = await _db.Users.AnyAsync(ct);
         var existing = await _userManager.FindByNameAsync("admin");
         if (existing == null)
         {
+            var seedPassword = FirstNonWhiteEnv(
+                "CRMMANAGEMENT_SEED_ADMIN_PASSWORD",
+                "CRM_SEED_ADMIN_PASSWORD",
+                "SEED_ADMIN_PASSWORD");
+            if (string.IsNullOrWhiteSpace(seedPassword)) return;
+
             var admin = new ApplicationUser
             {
                 UserName = "admin",
@@ -79,16 +84,7 @@ public sealed class DbInitializer
                 IsActive = true
             };
 
-            IdentityResult result;
-            if (!anyUsers)
-            {
-                result = await _userManager.CreateAsync(admin, "Admin#12345");
-            }
-            else
-            {
-                result = await _userManager.CreateAsync(admin);
-            }
-
+            var result = await _userManager.CreateAsync(admin, seedPassword);
             if (result.Succeeded)
             {
                 await _userManager.AddToRoleAsync(admin, "Admin");
@@ -101,6 +97,17 @@ public sealed class DbInitializer
                 await _userManager.AddToRoleAsync(existing, "Admin");
             }
         }
+    }
+
+    private static string? FirstNonWhiteEnv(params string[] names)
+    {
+        foreach (var name in names)
+        {
+            var value = Environment.GetEnvironmentVariable(name);
+            if (!string.IsNullOrWhiteSpace(value)) return value.Trim();
+        }
+
+        return null;
     }
 
     private async Task SeedPipelineAsync(CancellationToken ct)
