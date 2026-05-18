@@ -32,7 +32,7 @@
             if (string.Equals(v, "1", StringComparison.OrdinalIgnoreCase) || string.Equals(v, "true", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(v))
             {
                 isIframe = true;
-                resp?.Cookies.Append("crm_embed", "1", new CookieOptions { HttpOnly = false, SameSite = SameSiteMode.None, Secure = true, MaxAge = TimeSpan.FromHours(12) });
+                resp?.Cookies.Append("crm_embed", "1", new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.None, Secure = true, MaxAge = TimeSpan.FromHours(12) });
             }
         }
         else if (req?.Cookies["crm_embed"] == "1")
@@ -48,7 +48,7 @@
                 || (!string.IsNullOrEmpty(referer) && (referer.Contains("app.ldatabrain.com", StringComparison.OrdinalIgnoreCase) || (referer.Contains("ldatabrain.com", StringComparison.OrdinalIgnoreCase) && !referer.Contains("work.ldatabrain.com", StringComparison.OrdinalIgnoreCase)))))
             {
                 isIframe = true;
-                resp?.Cookies.Append("crm_embed", "1", new CookieOptions { HttpOnly = false, SameSite = SameSiteMode.None, Secure = true, MaxAge = TimeSpan.FromHours(12) });
+                resp?.Cookies.Append("crm_embed", "1", new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.None, Secure = true, MaxAge = TimeSpan.FromHours(12) });
             }
         }
     }

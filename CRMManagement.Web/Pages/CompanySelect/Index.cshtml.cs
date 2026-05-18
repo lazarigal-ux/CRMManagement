@@ -59,7 +59,7 @@ ORDER BY c.name;", conn);
 
         Response.Cookies.Append("crm_company", companyId.ToString(), new CookieOptions
         {
-            HttpOnly = false,
+            HttpOnly = true,
             SameSite = SameSiteMode.None,
             Secure = true,
             MaxAge = TimeSpan.FromDays(90),

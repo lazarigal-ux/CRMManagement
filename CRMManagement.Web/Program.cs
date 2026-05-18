@@ -109,7 +109,12 @@ if (oidc.Enabled && oidcAuthorityOk && !string.IsNullOrWhiteSpace(oidc.ClientId)
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 NameClaimType = oidc.NameClaimType,
-                RoleClaimType = oidc.RoleClaimType
+                RoleClaimType = oidc.RoleClaimType,
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateIssuerSigningKey = true,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.FromMinutes(2)
             };
 
             // Keep it flexible: allow http metadata in dev if the user chooses.
