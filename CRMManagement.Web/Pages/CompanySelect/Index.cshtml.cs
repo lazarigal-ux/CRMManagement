@@ -92,6 +92,23 @@ ORDER BY c.name;", conn);
             ?? Environment.GetEnvironmentVariable("APP_DB_PASSWORD")
             ?? "";
 
-        return $"Host={host};Port={port};Database={db};Username={user};Password={pass}";
+        return ApplySslOptions($"Host={host};Port={port};Database={db};Username={user};Password={pass}");
+    }
+
+    private static string ApplySslOptions(string connectionString)
+    {
+        var sslMode = Environment.GetEnvironmentVariable("DB_SSL_MODE");
+        if (!string.IsNullOrWhiteSpace(sslMode))
+            connectionString += $";SSL Mode={sslMode}";
+
+        var trustServerCertificate = Environment.GetEnvironmentVariable("DB_TRUST_SERVER_CERTIFICATE");
+        if (!string.IsNullOrWhiteSpace(trustServerCertificate))
+            connectionString += $";Trust Server Certificate={trustServerCertificate}";
+
+        var rootCertificate = Environment.GetEnvironmentVariable("DB_ROOT_CERTIFICATE");
+        if (!string.IsNullOrWhiteSpace(rootCertificate))
+            connectionString += $";Root Certificate={rootCertificate}";
+
+        return connectionString;
     }
 }
