@@ -2,34 +2,189 @@
 @model CRMManagement.Web.Pages.Admin.Users.IndexModel
 @{ ViewData["Title"] = "Admin - Users"; }
 
-<section class="p-4 space-y-4">
-    <h1 class="text-2xl font-semibold text-slate-100">Users</h1>
-    <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 overflow-auto">
-        <table class="w-full text-sm text-slate-200">
-            <thead><tr class="text-left text-xs uppercase text-slate-400"><th class="py-2">User</th><th class="py-2">Email</th><th class="py-2">Active</th><th class="py-2">Roles</th><th class="py-2">Actions</th></tr></thead>
-            <tbody>
-            @foreach (var u in Model.Items)
-            {
-                <tr class="border-t border-slate-700/40 align-top">
-                    <td class="py-2">@u.UserName</td>
-                    <td class="py-2">@u.Email</td>
-                    <td class="py-2">@(u.IsActive ? "Yes" : "No")</td>
-                    <td class="py-2">@string.Join(", ", u.Roles)</td>
-                    <td class="py-2">
-                        <form method="post" asp-page-handler="ToggleActive" class="inline-block mb-2">
-                            <input type="hidden" name="userId" value="@u.Id" />
-                            <input type="hidden" name="isActive" value="@((!u.IsActive).ToString().ToLower())" />
-                            <button class="px-3 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs">@(u.IsActive ? "Deactivate" : "Activate")</button>
-                        </form>
-                        <form method="post" asp-page-handler="SetRoles" class="flex gap-2 items-center">
-                            <input type="hidden" name="userId" value="@u.Id" />
-                            <input name="roles" value="@string.Join(",", u.Roles)" placeholder="comma,separated,roles" class="rounded-lg bg-slate-900/60 border border-slate-700 px-2 py-1 text-slate-100 text-xs" />
-                            <button class="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs">Set roles</button>
-                        </form>
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
+<style>
+    .ml-auto{margin-left:auto}.flex-nowrap{flex-wrap:nowrap}.text-\[12px\]{font-size:12px}.text-\[11px\]{font-size:11px}.text-\[10px\]{font-size:10px}.text-\[9px\]{font-size:9px}.text-emerald-400{color:rgb(52 211 153)}.text-sky-400{color:rgb(56 189 248)}.bg-brand\/15{background-color:rgba(59,130,246,.15)}.border-brand\/30{border-color:rgba(59,130,246,.3)}.hover\:opacity-80:hover{opacity:.8}.shrink-0{flex-shrink:0}.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}.backdrop-blur-sm{-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}.shadow-xl{box-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 8px 10px -6px rgba(0,0,0,.1)}.right-0{right:0}.mt-2{margin-top:.5rem}.w-48{width:12rem}.p-2{padding:.5rem}.leading-tight{line-height:1.25}
+
+    #usersTable{border-collapse:collapse}
+    #usersTable th,#usersTable td{border-right:1px solid rgba(148,163,184,.2)!important}
+    #usersTable th:last-child,#usersTable td:last-child{border-right:none!important}
+    #usersTable tbody td{border-bottom:1px solid rgba(148,163,184,.25)!important}
+    #usersTable thead th{border-bottom:1px solid rgba(148,163,184,.35)!important}
+
+    html[data-theme="gray"] .users-table-card{background:rgb(51,65,85)!important;border-color:rgba(148,163,184,.45)!important;box-shadow:0 6px 24px -4px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.07)!important}
+    html[data-theme="black"] .users-table-card{background:rgb(22,22,22)!important;border-color:rgba(255,255,255,.08)!important;box-shadow:0 2px 12px rgba(0,0,0,.6)!important}
+    html[data-theme="black"] .users-table-card .users-toolbar{border-bottom-color:rgba(255,255,255,.06)!important}
+    html[data-theme="black"] .users-table-card .users-toolbar-btn{border-color:rgba(255,255,255,.12)!important}
+    html[data-theme="black"] .users-table-card thead tr:first-child{background:rgba(255,255,255,.04)!important}
+    html[data-theme="black"] .users-table-card .users-filter-row{background:rgba(255,255,255,.02)!important}
+    html[data-theme="black"] .users-table-card .users-col-filter{background:rgba(0,0,0,.4)!important;border-color:rgba(255,255,255,.10)!important}
+    html[data-theme="black"] .users-table-card tbody tr:hover{background:rgba(255,255,255,.06)!important}
+    html[data-theme="light"] .users-table-card{background:#ffffff!important;border-color:#d5dbdb!important;box-shadow:0 1px 4px rgba(0,0,0,.08)!important;color:#16191f!important}
+    html[data-theme="light"] .users-table-card .users-toolbar{border-bottom-color:#e5e7eb!important}
+    html[data-theme="light"] .users-table-card thead tr:first-child{background:#f7f8f8!important;color:#16191f!important}
+    html[data-theme="light"] .users-table-card .users-filter-row{background:#f7f8f8!important}
+    html[data-theme="light"] .users-table-card .users-col-filter{background:#ffffff!important;border-color:#aab7b8!important;color:#16191f!important}
+    html[data-theme="light"] .users-table-card tbody tr{color:#16191f!important}
+    html[data-theme="light"] .users-table-card tbody tr:hover{background:rgba(0,0,0,.03)!important}
+
+    .users-ctx-menu{position:fixed;z-index:9999;min-width:13rem;padding:.35rem 0;border-radius:.65rem;border:1px solid light-dark(#d5dbdb,rgba(71,85,105,.6));background:light-dark(#ffffff,rgba(30,41,59,.97));color:light-dark(#16191f,#f1f5f9);box-shadow:0 12px 32px -4px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.04);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);font-size:13px;line-height:1;display:none}
+    .users-ctx-menu.open{display:block}
+    .users-ctx-menu-item{display:flex;align-items:center;gap:.6rem;padding:.5rem .85rem;cursor:pointer;transition:background 100ms;white-space:nowrap;border:none;background:none;width:100%;color:inherit;font-size:inherit;text-align:left}
+    .users-ctx-menu-item:hover{background:light-dark(rgba(0,0,0,.05),rgba(255,255,255,.08))}
+    .users-ctx-menu-item i{width:1rem;text-align:center;font-size:12px}
+    .users-ctx-menu-item--danger{color:rgb(239 68 68)}
+    .users-ctx-menu-item--danger:hover{background:rgba(239,68,68,.08)}
+    .users-ctx-sep{height:1px;margin:.3rem .6rem;background:light-dark(#e5e7eb,rgba(71,85,105,.45))}
+    html[data-theme="black"] .users-ctx-menu{background:rgba(17,17,17,.97)!important;border-color:rgba(255,255,255,.08)!important}
+    html[data-theme="light"] .users-ctx-menu{background:#ffffff!important;border-color:#d5dbdb!important;color:#16191f!important}
+
+    #users-colvis-menu label{display:flex;align-items:center;gap:.5rem;padding:.35rem .5rem;border-radius:.375rem;cursor:pointer;transition:background 120ms}
+    #users-colvis-menu label:hover{background:light-dark(rgba(0,0,0,.05),rgba(255,255,255,.08))}
+    html[data-theme="black"] #users-colvis-menu{background:rgba(17,17,17,.97)!important;border-color:rgba(255,255,255,.08)!important}
+
+    .users-badge{display:inline-flex;align-items:center;gap:.25rem;border-radius:9999px;padding:.1rem .5rem;font-size:10px;font-weight:700;white-space:nowrap}
+    .users-badge-on{background:light-dark(#dcfce7,rgba(34,197,94,.18));color:light-dark(#15803d,#86efac)}
+    .users-badge-off{background:light-dark(#e2e8f0,rgba(148,163,184,.18));color:light-dark(#334155,#cbd5e1)}
+    .users-role-pill{display:inline-flex;align-items:center;border-radius:9999px;border:1px solid;padding:.06rem .42rem;font-size:9.5px;font-weight:700;margin:1px;background:light-dark(#eef6fc,rgba(59,130,246,.14));border-color:light-dark(#9dcaea,rgba(96,165,250,.4));color:light-dark(#005a8b,#93c5fd)}
+    .users-act-btn{display:inline-flex;align-items:center;gap:.3rem;border-radius:9999px;border:1px solid;padding:.22rem .6rem;font-size:10px;font-weight:600;cursor:pointer;transition:opacity 120ms;white-space:nowrap}
+    .users-act-btn:hover{opacity:.82}
+    .users-act-neutral{border-color:light-dark(#aab7b8,rgba(100,116,139,.5));color:light-dark(#16191f,#e2e8f0);background:light-dark(#f7f8f8,rgba(255,255,255,.04))}
+    .users-act-primary{border-color:light-dark(#93c5fd,rgba(59,130,246,.45));color:light-dark(#1d4ed8,#93c5fd);background:light-dark(#dbeafe,rgba(59,130,246,.16))}
+    .users-roles-input{border-radius:.5rem;border:1px solid light-dark(#aab7b8,rgba(100,116,139,.5));background:light-dark(#ffffff,rgba(15,23,42,.5));color:light-dark(#16191f,#f1f5f9);padding:.22rem .5rem;font-size:10px;min-width:11rem;outline:none}
+    .users-roles-input:focus{border-color:#3b82f6;box-shadow:0 0 0 2px rgba(37,99,235,.35)}
+
+    @@media(max-width:640px){
+        .users-toolbar{flex-wrap:wrap;padding:.5rem .75rem;gap:.4rem}
+        .users-toolbar .ml-auto{flex-wrap:wrap;gap:.3rem}
+        .users-toolbar .ml-auto button>span,.users-toolbar .ml-auto a>span{display:none}
+        .users-toolbar h3{font-size:.7rem}
+        #usersTable th,#usersTable td{padding-left:.35rem;padding-right:.35rem;font-size:10px}
+        .users-col-filter{min-width:3rem;font-size:10px;padding:.15rem .3rem}
+    }
+</style>
+
+<div id="usersCtxMenu" class="users-ctx-menu">
+    <button type="button" class="users-ctx-menu-item" data-action="sort-asc"><i class="fa-solid fa-arrow-down-a-z"></i><span>Sort A &#x2192; Z</span></button>
+    <button type="button" class="users-ctx-menu-item" data-action="sort-desc"><i class="fa-solid fa-arrow-down-z-a"></i><span>Sort Z &#x2192; A</span></button>
+    <div class="users-ctx-sep"></div>
+    <button type="button" class="users-ctx-menu-item" data-action="hide"><i class="fa-solid fa-eye-slash"></i><span>Hide column</span></button>
+    <div class="users-ctx-sep"></div>
+    <button type="button" class="users-ctx-menu-item" data-action="move-left"><i class="fa-solid fa-arrow-left"></i><span>Move column left</span></button>
+    <button type="button" class="users-ctx-menu-item" data-action="move-right"><i class="fa-solid fa-arrow-right"></i><span>Move column right</span></button>
+    <div class="users-ctx-sep"></div>
+    <button type="button" class="users-ctx-menu-item" data-action="clear-filter"><i class="fa-solid fa-filter-circle-xmark"></i><span>Clear filter</span></button>
+    <button type="button" class="users-ctx-menu-item users-ctx-menu-item--danger" data-action="remove"><i class="fa-solid fa-trash-can"></i><span>Remove column</span></button>
+</div>
+
+<section class="w-full mt-2" style="padding-left:0;" data-page="crm-users">
+    <div class="w-full rounded-2xl border overflow-hidden users-table-card"
+         style="background:light-dark(#ffffff,rgb(51,65,85));border-color:light-dark(#d5dbdb,rgba(71,85,105,.5));box-shadow:light-dark(0 1px 4px rgba(0,0,0,.1),0 2px 8px rgba(0,0,0,.35));color:light-dark(#16191f,#f1f5f9)">
+
+        <div class="flex items-center gap-2 px-4 py-3 users-toolbar" style="border-bottom:1px solid light-dark(#d5dbdb,rgba(71,85,105,.4))">
+            <i class="fa-solid fa-users text-sm" style="color:light-dark(#0073bb,#60a5fa)"></i>
+            <h3 class="text-sm font-semibold uppercase tracking-wider" style="color:light-dark(#545b64,#cbd5e1)">Users</h3>
+            <div class="ml-auto flex items-center justify-end gap-2 flex-nowrap">
+                <div class="relative shrink-0">
+                    <button id="users-colvis-toggle" type="button" class="inline-flex items-center gap-2 rounded-full border ring-1 px-3 py-1.5 text-sm hover:opacity-80 transition users-toolbar-btn" style="border-color:light-dark(#aab7b8,rgba(100,116,139,.6));ring-color:light-dark(rgba(0,0,0,.06),rgba(148,163,184,.2))" title="Show/Hide columns"><i class="fa-solid fa-table-columns text-[12px]"></i><span>Cols &#x25BE;</span></button>
+                    <div id="users-colvis-menu" class="hidden absolute right-0 z-50 mt-2 w-48 rounded-xl border shadow-xl backdrop-blur-sm p-2 text-sm leading-tight" style="border-color:light-dark(#d5dbdb,rgba(71,85,105,.6));background:light-dark(#ffffff,rgba(30,41,59,.95));color:light-dark(#16191f,#f1f5f9)"></div>
+                </div>
+                <div class="flex items-center rounded-full border ring-1 overflow-hidden users-toolbar-btn" style="border-color:light-dark(#aab7b8,rgba(100,116,139,.6));ring-color:light-dark(rgba(0,0,0,.06),rgba(148,163,184,.2))">
+                    <button type="button" id="usersBtnExcel" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm hover:opacity-80 transition" style="border-right:1px solid light-dark(#d5dbdb,rgba(100,116,139,.4));color:light-dark(#16191f,#f1f5f9)" title="Export to Excel"><i class="fa-solid fa-file-excel text-[12px] text-emerald-400"></i><span>Excel</span></button>
+                    <button type="button" id="usersBtnPdf" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm hover:opacity-80 transition" style="border-right:1px solid light-dark(#d5dbdb,rgba(100,116,139,.4));color:light-dark(#16191f,#f1f5f9)" title="Export to PDF"><i class="fa-solid fa-file-pdf text-[12px]" style="color:rgb(251 113 133)"></i><span>PDF</span></button>
+                    <button type="button" id="usersBtnPrint" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm hover:opacity-80 transition" style="color:light-dark(#16191f,#f1f5f9)" title="Print table"><i class="fa-solid fa-print text-[12px] text-sky-400"></i><span>Print</span></button>
+                </div>
+                <span class="inline-flex items-center gap-1 rounded-full bg-brand/15 border border-brand/30 px-3 py-0.5 text-xs font-semibold" style="color:light-dark(#0073bb,rgb(96 165 250))"><i class="fa-solid fa-hashtag text-[9px]"></i>@Model.Items.Count</span>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table id="usersTable" class="min-w-full">
+                <thead>
+                    <tr style="background:light-dark(#f7f8f8,rgba(30,41,59,.8));color:light-dark(#16191f,#f1f5f9)" class="text-[11px] uppercase tracking-wide select-none">
+                        <th class="px-3 py-3 text-left align-top whitespace-nowrap" data-col-idx="0"><div class="flex items-start justify-between gap-2"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-user text-[10px]"></i><span>User</span></span><button type="button" class="users-th-btn opacity-40 hover:opacity-100 text-xs px-1 py-0.5 rounded-md border border-transparent hover:border-current/30" title="Column filter"><i class="fa-solid fa-filter text-[10px]"></i></button></div></th>
+                        <th class="px-3 py-3 text-left align-top whitespace-nowrap" data-col-idx="1"><div class="flex items-start justify-between gap-2"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-envelope text-[10px]"></i><span>Email</span></span><button type="button" class="users-th-btn opacity-40 hover:opacity-100 text-xs px-1 py-0.5 rounded-md border border-transparent hover:border-current/30" title="Column filter"><i class="fa-solid fa-filter text-[10px]"></i></button></div></th>
+                        <th class="px-3 py-3 text-left align-top whitespace-nowrap" data-col-idx="2"><div class="flex items-start justify-between gap-2"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-circle-check text-[10px]"></i><span>Active</span></span><button type="button" class="users-th-btn opacity-40 hover:opacity-100 text-xs px-1 py-0.5 rounded-md border border-transparent hover:border-current/30" title="Column filter"><i class="fa-solid fa-filter text-[10px]"></i></button></div></th>
+                        <th class="px-3 py-3 text-left align-top whitespace-nowrap" data-col-idx="3"><div class="flex items-start justify-between gap-2"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-user-shield text-[10px]"></i><span>Roles</span></span><button type="button" class="users-th-btn opacity-40 hover:opacity-100 text-xs px-1 py-0.5 rounded-md border border-transparent hover:border-current/30" title="Column filter"><i class="fa-solid fa-filter text-[10px]"></i></button></div></th>
+                        <th class="px-3 py-3 text-left align-top whitespace-nowrap"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-bolt text-[10px]"></i><span>Actions</span></span></th>
+                    </tr>
+                    <tr class="users-filter-row text-[12px]" style="background:light-dark(#f7f8f8,rgba(30,41,59,.6));color:light-dark(#16191f,#e2e8f0)">
+                        @for(var i=0;i<4;i++){<th class="px-3 py-2"><input class="users-col-filter w-full rounded-md border px-2 py-1 text-[12px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-600/40" style="background:light-dark(#ffffff,rgba(30,41,59,.4));border-color:light-dark(#aab7b8,rgba(100,116,139,.5));color:light-dark(#16191f,#f1f5f9)" type="text" placeholder="Search" data-col="@i" /></th>}
+                        <th class="px-3 py-2"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @if(Model.Items.Count>0){
+                    @foreach(var u in Model.Items){
+                        var rolesText = string.Join(", ", u.Roles);
+                        <tr class="hover:opacity-90 transition-colors align-top" style="border-top:1px solid light-dark(#e5e7eb,rgba(71,85,105,.5))">
+                            <td class="px-3 py-3 text-xs whitespace-nowrap" data-full="@u.UserName"><span class="font-medium">@u.UserName</span></td>
+                            <td class="px-3 py-3 text-xs whitespace-nowrap" data-full="@u.Email">@u.Email</td>
+                            <td class="px-3 py-3 text-xs whitespace-nowrap" data-full="@(u.IsActive ? "Yes" : "No")">
+                                <span class="users-badge @(u.IsActive ? "users-badge-on" : "users-badge-off")">@(u.IsActive ? "Yes" : "No")</span>
+                            </td>
+                            <td class="px-3 py-3 text-xs" data-full="@rolesText">
+                                @if(u.Roles.Any()){
+                                    foreach(var r in u.Roles){<span class="users-role-pill">@r</span>}
+                                } else {
+                                    <span style="opacity:.5">&mdash;</span>
+                                }
+                            </td>
+                            <td class="px-3 py-3 text-xs whitespace-nowrap">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <form method="post" asp-page-handler="ToggleActive" class="inline-flex">
+                                        <input type="hidden" name="userId" value="@u.Id" />
+                                        <input type="hidden" name="isActive" value="@((!u.IsActive).ToString().ToLower())" />
+                                        <button type="submit" class="users-act-btn users-act-neutral"><i class="fa-solid @(u.IsActive ? "fa-user-slash" : "fa-user-check") text-[9px]"></i>@(u.IsActive ? "Deactivate" : "Activate")</button>
+                                    </form>
+                                    <form method="post" asp-page-handler="SetRoles" class="inline-flex items-center gap-1">
+                                        <input type="hidden" name="userId" value="@u.Id" />
+                                        <input name="roles" value="@rolesText.Replace(", ", ",")" placeholder="comma,separated,roles" class="users-roles-input" />
+                                        <button type="submit" class="users-act-btn users-act-primary"><i class="fa-solid fa-user-shield text-[9px]"></i>Set roles</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                </tbody>
+            </table>
+        </div>
+        @if(Model.Items.Count==0){<div class="px-4 py-8 text-center" style="color:light-dark(#545b64,#94a3b8);border-top:1px solid light-dark(#d5dbdb,rgba(71,85,105,.4))">No users found.</div>}
     </div>
 </section>
+
+@section Scripts{
+<script>
+(function(){
+    var table=document.getElementById('usersTable');
+    var ctxMenu=document.getElementById('usersCtxMenu');
+    var ctxColIdx=null;
+    function openCtxMenu(btnEl,colIdx){ctxColIdx=colIdx;ctxMenu.style.top='-9999px';ctxMenu.style.left='-9999px';ctxMenu.classList.add('open');var mr=ctxMenu.getBoundingClientRect(),mw=mr.width,mh=mr.height;var r=btnEl.getBoundingClientRect();var top=r.bottom+4,left=r.right-mw-40;if(left<8)left=8;if(left+mw>window.innerWidth-8)left=window.innerWidth-mw-8;if(top+mh>window.innerHeight-8)top=Math.max(8,r.top-mh-4);ctxMenu.style.top=top+'px';ctxMenu.style.left=left+'px';}
+    function closeCtxMenu(){ctxMenu.classList.remove('open');ctxColIdx=null;}
+    if(table){table.querySelectorAll('.users-th-btn').forEach(function(thBtn){thBtn.addEventListener('click',function(e){e.stopPropagation();var th=thBtn.closest('th');var idx=th?parseInt(th.getAttribute('data-col-idx'),10):null;if(idx===null||isNaN(idx))return;if(ctxMenu.classList.contains('open')&&ctxColIdx===idx){closeCtxMenu();return;}openCtxMenu(thBtn,idx);});});}
+    document.addEventListener('click',function(e){if(ctxMenu&&!ctxMenu.contains(e.target))closeCtxMenu();});
+
+    var colNames=['User','Email','Active','Roles','Actions'];
+    var tbody=table?table.querySelector('tbody'):null;
+    var filters=table?table.querySelectorAll('.users-col-filter'):[];
+    function applyColumnFilters(){if(!tbody)return;tbody.querySelectorAll('tr').forEach(function(row){var cells=row.querySelectorAll('td');var visible=true;filters.forEach(function(f){var col=parseInt(f.getAttribute('data-col'),10);if(isNaN(col)||col>=cells.length)return;var val=(cells[col].getAttribute('data-full')||cells[col].textContent||'').toLowerCase();var term=f.value.toLowerCase().trim();if(term&&val.indexOf(term)===-1)visible=false;});row.style.display=visible?'':'none';});}
+    if(filters.length&&tbody){filters.forEach(function(input){input.addEventListener('input',applyColumnFilters);});}
+
+    function sortTable(ci,asc){if(!table)return;var tbd=table.querySelector('tbody');if(!tbd)return;var rows=Array.from(tbd.querySelectorAll('tr'));rows.sort(function(a,b){var ac=a.querySelectorAll('td'),bc=b.querySelectorAll('td');var av=(ac[ci]?(ac[ci].getAttribute('data-full')||ac[ci].textContent):'').toLowerCase().trim();var bv=(bc[ci]?(bc[ci].getAttribute('data-full')||bc[ci].textContent):'').toLowerCase().trim();return asc?av.localeCompare(bv):bv.localeCompare(av);});rows.forEach(function(r){tbd.appendChild(r);});}
+    function swapColumns(a,b){table.querySelectorAll('tr').forEach(function(row){var cells=Array.from(row.querySelectorAll('th, td'));if(!cells[a]||!cells[b])return;if(a<b)row.insertBefore(cells[b],cells[a]);else row.insertBefore(cells[a],cells[b]);});}
+    function setColVisible(ci,show){table.querySelectorAll('tr').forEach(function(row){var c=row.querySelectorAll('th, td');if(c[ci])c[ci].style.display=show?'':'none';});var cb=colvisMenu?colvisMenu.querySelector('input[data-colvis="'+ci+'"]'):null;if(cb)cb.checked=show;}
+
+    ctxMenu.querySelectorAll('.users-ctx-menu-item').forEach(function(item){item.addEventListener('click',function(){var action=item.getAttribute('data-action');var ci=ctxColIdx;closeCtxMenu();if(ci===null)return;switch(action){case'sort-asc':sortTable(ci,true);break;case'sort-desc':sortTable(ci,false);break;case'hide':setColVisible(ci,false);break;case'move-left':if(ci>0)swapColumns(ci-1,ci);break;case'move-right':var max=colNames.length-2;if(ci<max)swapColumns(ci,ci+1);break;case'clear-filter':var inp=table.querySelector('.users-col-filter[data-col="'+ci+'"]');if(inp){inp.value='';applyColumnFilters();}break;case'remove':setColVisible(ci,false);break;}});});
+
+    var colvisToggle=document.getElementById('users-colvis-toggle');
+    var colvisMenu=document.getElementById('users-colvis-menu');
+    if(colvisMenu){colNames.forEach(function(name,idx){var lbl=document.createElement('label');var cb=document.createElement('input');cb.type='checkbox';cb.checked=true;cb.setAttribute('data-colvis',idx);cb.style.accentColor='#3b82f6';lbl.appendChild(cb);lbl.appendChild(document.createTextNode(' '+name));colvisMenu.appendChild(lbl);cb.addEventListener('change',function(){var show=cb.checked;table.querySelectorAll('tr').forEach(function(row){var cells=row.querySelectorAll('th, td');if(cells[idx])cells[idx].style.display=show?'':'none';});});});}
+    if(colvisToggle&&colvisMenu){colvisToggle.addEventListener('click',function(e){e.stopPropagation();colvisMenu.classList.toggle('hidden');});document.addEventListener('click',function(e){if(!colvisMenu.contains(e.target)&&e.target!==colvisToggle)colvisMenu.classList.add('hidden');});}
+
+    document.getElementById('usersBtnExcel')?.addEventListener('click',function(){var rows=[colNames.slice(0,-1).join(',')];(tbody?tbody.querySelectorAll('tr'):[]).forEach(function(tr){if(tr.style.display==='none')return;var cells=tr.querySelectorAll('td');var row=[];for(var i=0;i<cells.length-1;i++){var v=(cells[i].getAttribute('data-full')||cells[i].textContent||'').trim();row.push('"'+v.replace(/"/g,'""')+'"');}rows.push(row.join(','));});var blob=new Blob(['﻿'+rows.join('\n')],{type:'text/csv;charset=utf-8;'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Users.csv';a.click();URL.revokeObjectURL(a.href);});
+    function printOrPdf(isPdf){var clone=table.cloneNode(true);clone.querySelectorAll('.users-filter-row').forEach(function(r){r.remove();});clone.querySelectorAll('tr').forEach(function(tr){if(tr.style.display==='none')tr.remove();});clone.querySelectorAll('tr').forEach(function(tr){var cells=tr.querySelectorAll('th, td');if(cells.length)cells[cells.length-1].remove();});var w=window.open('','_blank');w.document.write('<html><head><title>Users</title><style>body{font-family:system-ui,sans-serif;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:6px 10px;text-align:left;font-size:12px}th{background:#f0f0f0;font-weight:600;text-transform:uppercase}</style></head><body>');w.document.write('<h2>Users</h2>');w.document.write(clone.outerHTML);w.document.write('</body></html>');w.document.close();setTimeout(function(){w.print();},300);}
+    document.getElementById('usersBtnPdf')?.addEventListener('click',function(){printOrPdf(true);});
+    document.getElementById('usersBtnPrint')?.addEventListener('click',function(){printOrPdf(false);});
+})();
+</script>
+}

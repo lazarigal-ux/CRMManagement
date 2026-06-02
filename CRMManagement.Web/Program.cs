@@ -19,8 +19,18 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using CRMManagement.Infrastructure.Identity;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Structured logging: Serilog compact JSON to stdout (Fluent Bit -> OpenSearch).
+builder.Host.UseSerilog((ctx, lc) => lc
+    .ReadFrom.Configuration(ctx.Configuration)
+    .Enrich.FromLogContext()
+    .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Warning)
+    .WriteTo.Console(new Serilog.Formatting.Compact.RenderedCompactJsonFormatter()));
+
 
 // Best-effort: if DB password env vars are missing (common when starting from VS), load them from the installer-style .env.
 // Does not override already-set environment variables (e.g., run-crmmanagement-dev.ps1).
