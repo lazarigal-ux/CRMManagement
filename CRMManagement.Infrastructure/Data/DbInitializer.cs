@@ -34,6 +34,8 @@ public sealed class DbInitializer
             await _db.Database.EnsureCreatedAsync(ct);
         }
 
+        await EnsureCustomersTableAsync(ct);
+
         await SeedRolesAsync(ct);
         await SeedAdminUserAsync(ct);
         await SeedPipelineAsync(ct);
@@ -50,6 +52,64 @@ public sealed class DbInitializer
         catch
         {
             // ignore
+        }
+    }
+
+    // Owns the crm_customers table. On first run this physically relocates the
+    // legacy service.svc_customers table (with its 198 rows, indexes and inbound
+    // FKs) into the crm schema — a one‑time, data‑preserving move. It is fully
+    // idempotent: once crm.crm_customers exists the move is skipped, and a fresh
+    // environment with no source table simply gets an empty table created.
+    private async Task EnsureCustomersTableAsync(CancellationToken ct)
+    {
+        try
+        {
+            // One‑time relocation: service.svc_customers → crm.crm_customers.
+            await _db.Database.ExecuteSqlRawAsync(
+                """
+                DO $$
+                BEGIN
+                    IF to_regclass('crm.crm_customers') IS NULL
+                       AND to_regclass('service.svc_customers') IS NOT NULL THEN
+                        ALTER TABLE service.svc_customers SET SCHEMA crm;
+                        ALTER TABLE crm.svc_customers RENAME TO crm_customers;
+                    END IF;
+                END $$;
+                """, ct);
+
+            // Fresh environment (no source table to move): create it directly.
+            await _db.Database.ExecuteSqlRawAsync(
+                """
+                CREATE TABLE IF NOT EXISTS crm.crm_customers (
+                    "Id" uuid NOT NULL PRIMARY KEY,
+                    "MainProjectId" uuid NULL,
+                    "ExternalNumber" character varying(20) NOT NULL,
+                    "Name" character varying(300) NOT NULL,
+                    "CustomerType" character varying(120) NULL,
+                    "City" character varying(120) NULL,
+                    "Address" character varying(300) NULL,
+                    "Status" character varying(40) NULL,
+                    "OpenedOn" date NULL,
+                    "StatusUpdatedOn" date NULL,
+                    "Phone" character varying(60) NULL,
+                    "Fax" character varying(60) NULL,
+                    "Email" character varying(200) NULL,
+                    "CompanyNumber" character varying(40) NULL,
+                    "VatFileNumber" character varying(40) NULL,
+                    "PaymentTermsCode" character varying(20) NULL,
+                    "PaymentTermsName" character varying(60) NULL,
+                    "CreatedAt" timestamp without time zone NOT NULL DEFAULT (now() at time zone 'utc'),
+                    "UpdatedAt" timestamp without time zone NOT NULL DEFAULT (now() at time zone 'utc')
+                );
+                CREATE UNIQUE INDEX IF NOT EXISTS "IX_crm_customers_ExternalNumber" ON crm.crm_customers ("ExternalNumber");
+                CREATE INDEX IF NOT EXISTS "IX_crm_customers_Name" ON crm.crm_customers ("Name");
+                CREATE INDEX IF NOT EXISTS "IX_crm_customers_Status" ON crm.crm_customers ("Status");
+                CREATE INDEX IF NOT EXISTS "IX_crm_customers_MainProjectId" ON crm.crm_customers ("MainProjectId");
+                """, ct);
+        }
+        catch
+        {
+            // ignore — table will be present after the prod schema move
         }
     }
 

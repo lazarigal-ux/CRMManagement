@@ -1,0 +1,213 @@
+@page "{id:guid?}"
+@model CRMManagement.Web.Pages.Customers.UpsertModel
+@{
+    ViewData["Title"] = Model.IsEdit ? "Edit Customer" : "New Customer";
+}
+
+<style>
+    html body.app-body #content.app-main {
+        padding-left:2px!important;padding-right:2px!important;
+    }
+    #content-shell { overflow-x: hidden !important; }
+    .svc-form-grid { display:grid; gap:.75rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @@media (max-width: 767px) { .svc-form-grid { grid-template-columns: 1fr !important; } }
+    .svc-input {
+        width:100%; border-radius:.5rem; border:1px solid; padding:.4rem .75rem; font-size:.875rem;
+        background: light-dark(#ffffff, rgba(0,0,0,.2));
+        border-color: light-dark(#d5dbdb, rgba(255,255,255,.08));
+        color: light-dark(#16191f, #e2e8f0);
+    }
+    .svc-label { font-size:.7rem; text-transform: uppercase; letter-spacing:.05em; font-weight:600;
+        color: light-dark(#0073bb, #7dd3fc); margin-bottom:.25rem; display:block; }
+
+    /* Themed select dropdown popup — overrides browser native dropdown colors. */
+    select.svc-input { color-scheme: dark light; }
+    html[data-theme="light"] select.svc-input,
+    html:not(.dark) select.svc-input { color-scheme: light; }
+    html[data-theme="black"] select.svc-input,
+    html[data-theme="gray"] select.svc-input,
+    html.dark select.svc-input { color-scheme: dark; }
+    select.svc-input option { background: light-dark(#ffffff, rgb(30, 41, 59)); color: light-dark(#16191f, #e2e8f0); }
+    html[data-theme="black"] select.svc-input option { background: rgb(22, 22, 22) !important; color: #e2e8f0 !important; }
+    html[data-theme="gray"] select.svc-input option,
+    html.dark select.svc-input option { background: rgb(51, 65, 85) !important; color: #e2e8f0 !important; }
+    html[data-theme="light"] select.svc-input option,
+    html:not(.dark) select.svc-input option { background: #ffffff !important; color: #16191f !important; }
+    select.svc-input option:checked,
+    select.svc-input option:hover {
+        background: light-dark(#dbeafe, rgba(59,130,246,.25)) !important;
+        color: light-dark(#1e3a8a, #ffffff) !important;
+    }
+</style>
+
+<section class="w-full max-w-full overflow-x-hidden" style="margin-top:12px; padding-inline:8px; padding-bottom:2rem;">
+
+    <div class="rounded-2xl border overflow-hidden"
+         style="background:light-dark(#ffffff, rgb(51,65,85));
+                border-color:light-dark(#d5dbdb, rgba(71,85,105,.5));
+                box-shadow:light-dark(0 1px 4px rgba(0,0,0,.1), 0 2px 8px rgba(0,0,0,.35));
+                color:light-dark(#16191f, #f1f5f9)">
+        <div class="px-4 py-3 flex items-center justify-between"
+             style="border-bottom:1px solid light-dark(#d5dbdb, rgba(255,255,255,.08))">
+            <div>
+                <div class="text-sm font-bold" style="color:light-dark(#16191f, #f1f5f9)">
+                    @(Model.IsEdit ? "Edit Customer" : "New Customer")
+                </div>
+                <div class="text-xs mt-0.5" style="color:light-dark(#545b64, #94a3b8)">L Control customer details</div>
+            </div>
+            <a asp-page="/Customers/Index"
+               class="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium"
+               style="background:light-dark(#f7f8f8, rgba(255,255,255,.04)); border-color:light-dark(#d5dbdb, rgba(255,255,255,.08))">
+                <i class="fa-solid fa-arrow-left text-[10px]"></i>
+                Back
+            </a>
+        </div>
+
+        <form method="post" class="px-4 py-4">
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="All"
+                 class="rounded-lg border px-3 py-2 mb-3 text-xs"
+                 style="background:light-dark(#fef2f2, rgba(239,68,68,.1)); border-color:light-dark(#fecaca, rgba(239,68,68,.3)); color:light-dark(#991b1b, #fca5a5)"></div>
+
+            <div class="svc-form-grid">
+                <div>
+                    <label class="svc-label" asp-for="Input.ExternalNumber">Customer No.</label>
+                    <input asp-for="Input.ExternalNumber" class="svc-input" />
+                </div>
+                <div>
+                    <label class="svc-label" asp-for="Input.Name">Customer Name</label>
+                    <input asp-for="Input.Name" class="svc-input" />
+                </div>
+                <div>
+                    <label class="svc-label" asp-for="Input.CustomerType">Customer Type</label>
+                    <input asp-for="Input.CustomerType" class="svc-input" placeholder="L Control service customer" />
+                </div>
+                <div>
+                    <label class="svc-label" asp-for="Input.Status">Status</label>
+                    <select asp-for="Input.Status" class="svc-input">
+                        <option value="פעיל">Active</option>
+                        <option value="לא פעיל">Inactive</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="svc-label" asp-for="Input.City">City</label>
+                    <input asp-for="Input.City" class="svc-input" />
+                </div>
+                <div>
+                    <label class="svc-label" asp-for="Input.Address">Address</label>
+                    <input asp-for="Input.Address" class="svc-input" />
+                </div>
+                <div>
+                    <label class="svc-label" asp-for="Input.OpenedOn">Opened On</label>
+                    <input asp-for="Input.OpenedOn" type="date" class="svc-input" />
+                </div>
+                <div>
+                    <label class="svc-label" asp-for="Input.StatusUpdatedOn">Status Updated On</label>
+                    <input asp-for="Input.StatusUpdatedOn" type="date" class="svc-input" />
+                </div>
+                <div>
+                    <label class="svc-label" asp-for="Input.Phone">Phone</label>
+                    <input asp-for="Input.Phone" class="svc-input" />
+                </div>
+                <div>
+                    <label class="svc-label" asp-for="Input.Fax">Fax</label>
+                    <input asp-for="Input.Fax" class="svc-input" />
+                </div>
+                <div>
+                    <label class="svc-label" asp-for="Input.Email">Email</label>
+                    <input asp-for="Input.Email" class="svc-input" />
+                </div>
+                <div>
+                    <label class="svc-label" asp-for="Input.CompanyNumber">Company No.</label>
+                    <input asp-for="Input.CompanyNumber" class="svc-input" />
+                </div>
+                <div>
+                    <label class="svc-label" asp-for="Input.VatFileNumber">VAT File No.</label>
+                    <input asp-for="Input.VatFileNumber" class="svc-input" />
+                </div>
+                <div>
+                    <label class="svc-label" asp-for="Input.PaymentTermsCode">Payment Terms Code</label>
+                    <select asp-for="Input.PaymentTermsCode" id="paymentTermsCodeSelect" class="svc-input">
+                        <option value="">— select —</option>
+                        @foreach (var term in Model.PaymentTermOptions.Where(x => !string.IsNullOrWhiteSpace(x.Code)))
+                        {
+                            <option value="@term.Code" data-name="@term.Name" selected="@(string.Equals(Model.Input.PaymentTermsCode, term.Code, StringComparison.OrdinalIgnoreCase))">@(string.IsNullOrWhiteSpace(term.Name) ? term.Code : $"{term.Code} — {term.Name}")</option>
+                        }
+                    </select>
+                </div>
+                <div class="md:col-span-2" style="grid-column:1/-1">
+                    <label class="svc-label" asp-for="Input.PaymentTermsName">Payment Terms</label>
+                    <select asp-for="Input.PaymentTermsName" id="paymentTermsNameSelect" class="svc-input">
+                        <option value="">— select —</option>
+                        @foreach (var term in Model.PaymentTermOptions.Where(x => !string.IsNullOrWhiteSpace(x.Name)))
+                        {
+                            <option value="@term.Name" data-code="@term.Code" selected="@(string.Equals(Model.Input.PaymentTermsName, term.Name, StringComparison.OrdinalIgnoreCase))">@(string.IsNullOrWhiteSpace(term.Code) ? term.Name : $"{term.Name} — {term.Code}")</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-4 flex items-center justify-end gap-2">
+                <a asp-page="/Customers/Index"
+                   class="inline-flex items-center justify-center rounded-xl border px-4 py-2 text-xs font-semibold"
+                   style="background:light-dark(#f7f8f8, rgba(255,255,255,.04)); border-color:light-dark(#d5dbdb, rgba(255,255,255,.08)); color:light-dark(#16191f, #e2e8f0)">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="inline-flex items-center justify-center rounded-xl border px-4 py-2 text-xs font-semibold"
+                        style="background:light-dark(#0073bb, #2563eb); border-color:light-dark(#005a8b, #1d4ed8); color:#ffffff">
+                    @(Model.IsEdit ? "Save Changes" : "Create Customer")
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/themes/dark.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script>
+(function () {
+    if (!window.flatpickr) return;
+    document.querySelectorAll('input[type="date"]').forEach(el => {
+        window.flatpickr(el, {
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: 'd/m/Y',
+            allowInput: true,
+        });
+    });
+})();
+
+(function () {
+    const codeSelect = document.getElementById('paymentTermsCodeSelect');
+    const nameSelect = document.getElementById('paymentTermsNameSelect');
+    if (!codeSelect || !nameSelect) return;
+
+    function selectByValue(select, value) {
+        const normalized = String(value || '').trim().toLowerCase();
+        for (const option of select.options) {
+            if (String(option.value || '').trim().toLowerCase() === normalized) {
+                select.value = option.value;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    codeSelect.addEventListener('change', function () {
+        const selected = codeSelect.options[codeSelect.selectedIndex];
+        const name = selected ? selected.getAttribute('data-name') : '';
+        if (name) selectByValue(nameSelect, name);
+    });
+
+    nameSelect.addEventListener('change', function () {
+        const selected = nameSelect.options[nameSelect.selectedIndex];
+        const code = selected ? selected.getAttribute('data-code') : '';
+        if (code) selectByValue(codeSelect, code);
+    });
+})();
+</script>
+}

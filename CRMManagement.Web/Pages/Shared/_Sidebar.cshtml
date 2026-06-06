@@ -8,10 +8,6 @@
     string ItemCls(string prefix) =>
         "flex items-center gap-2 w-full py-1.5 px-3 rounded-xl transition text-slate-200 hover:text-white hover:bg-slate-600 whitespace-nowrap overflow-hidden text-ellipsis "
         + (StartsWith(prefix) ? "bg-slate-600 text-white ring-1 ring-slate-500/50" : "");
-
-    string ItemClsExact(params string[] paths) =>
-        "flex items-center gap-2 w-full py-1.5 px-3 rounded-xl transition text-slate-200 hover:text-white hover:bg-slate-600 whitespace-nowrap overflow-hidden text-ellipsis "
-        + (paths.Any(path => string.Equals(currentPath, path.ToLowerInvariant(), StringComparison.Ordinal)) ? "bg-slate-600 text-white ring-1 ring-slate-500/50" : "");
 }
 
 @if (showSidebar)
@@ -45,6 +41,11 @@
             <a asp-page="/Accounts/Index" title="Accounts" class="@ItemCls("/accounts")">
                 <i class="fa-solid fa-building w-3.5 text-xs"></i>
                 <span class="sb-text text-xs truncate">Accounts</span>
+            </a>
+
+            <a asp-page="/Customers/Index" title="Customers" class="@ItemCls("/customers")">
+                <i class="fa-solid fa-address-book w-3.5 text-xs"></i>
+                <span class="sb-text text-xs truncate">Customers</span>
             </a>
 
             <a asp-page="/Contacts/Index" title="Contacts" class="@ItemCls("/contacts")">
@@ -85,26 +86,6 @@
             <a asp-page="/Reports/Index" title="Reports" class="@ItemCls("/reports")">
                 <i class="fa-solid fa-chart-line w-3.5 text-xs"></i>
                 <span class="sb-text text-xs truncate">Reports</span>
-            </a>
-
-            <a asp-page="/PdfToSvg/Index" title="PDF to SVG" class="@ItemClsExact("/pdftosvg", "/pdftosvg/index")">
-                <i class="fa-solid fa-vector-square w-3.5 text-xs"></i>
-                <span class="sb-text text-xs truncate">PDF to SVG</span>
-            </a>
-
-            <a asp-page="/AiEngine/PdfToSvgSplit" title="PDF to SVG Split" class="@ItemCls("/pdftosvg/split")">
-                <i class="fa-solid fa-scissors w-3.5 text-xs"></i>
-                <span class="sb-text text-xs truncate">PDF to SVG Split</span>
-            </a>
-
-            <a href="/AiEngine/PdfToSvgSplit" title="PDF to SVG Split (ChatGateway)" class="flex items-center gap-2 w-full py-1.5 px-3 rounded-xl transition text-slate-200 hover:text-white hover:bg-slate-600 whitespace-nowrap overflow-hidden text-ellipsis">
-                <i class="fa-solid fa-up-right-from-square w-3.5 text-xs"></i>
-                <span class="sb-text text-xs truncate">PDF to SVG Split Gateway</span>
-            </a>
-
-            <a href="/AiEngine/PdfToSvgLayers" title="PDF to SVG Layers (ChatGateway)" class="flex items-center gap-2 w-full py-1.5 px-3 rounded-xl transition text-slate-200 hover:text-white hover:bg-slate-600 whitespace-nowrap overflow-hidden text-ellipsis">
-                <i class="fa-solid fa-layer-group w-3.5 text-xs"></i>
-                <span class="sb-text text-xs truncate">PDF to SVG Layers Gateway</span>
             </a>
 
             <div class="!my-2 mx-3 border-t border-slate-600/40"></div>

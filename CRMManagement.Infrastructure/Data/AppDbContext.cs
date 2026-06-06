@@ -21,6 +21,7 @@ public sealed class AppDbContext : IdentityDbContext<
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<Account> Accounts => Set<Account>();
+    public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Contact> Contacts => Set<Contact>();
     public DbSet<Lead> Leads => Set<Lead>();
     public DbSet<Opportunity> Opportunities => Set<Opportunity>();
@@ -88,6 +89,33 @@ public sealed class AppDbContext : IdentityDbContext<
             b.Property(x => x.Description).HasMaxLength(4000);
             b.HasIndex(x => x.Name).IsUnique();
             b.HasIndex(x => x.OwnerUserId);
+        });
+
+        // Service customer directory relocated from service.svc_customers.
+        // CRM owns the crm_customers table; column shape matches the moved table 1:1.
+        builder.Entity<Customer>(b =>
+        {
+            b.ToTable("crm_customers", Schema);
+            b.HasKey(x => x.Id);
+            b.Property(x => x.ExternalNumber).HasMaxLength(20).IsRequired();
+            b.Property(x => x.Name).HasMaxLength(300).IsRequired();
+            b.Property(x => x.CustomerType).HasMaxLength(120);
+            b.Property(x => x.City).HasMaxLength(120);
+            b.Property(x => x.Address).HasMaxLength(300);
+            b.Property(x => x.Status).HasMaxLength(40);
+            b.Property(x => x.Phone).HasMaxLength(60);
+            b.Property(x => x.Fax).HasMaxLength(60);
+            b.Property(x => x.Email).HasMaxLength(200);
+            b.Property(x => x.CompanyNumber).HasMaxLength(40);
+            b.Property(x => x.VatFileNumber).HasMaxLength(40);
+            b.Property(x => x.PaymentTermsCode).HasMaxLength(20);
+            b.Property(x => x.PaymentTermsName).HasMaxLength(60);
+            b.Property(x => x.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+            b.Property(x => x.UpdatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+            b.HasIndex(x => x.ExternalNumber).IsUnique();
+            b.HasIndex(x => x.Name);
+            b.HasIndex(x => x.Status);
+            b.HasIndex(x => x.MainProjectId);
         });
 
         builder.Entity<Contact>(b =>
