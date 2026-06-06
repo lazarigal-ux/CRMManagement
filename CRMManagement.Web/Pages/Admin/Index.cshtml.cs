@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace CRMManagement.Web.Pages.Admin;
 
+[Authorize(Roles = "Admin")]
 public sealed class IndexModel : PageModel
 {
     public sealed record SettingsLink(string Label, string Description, string Icon, string Page, string? Href = null);

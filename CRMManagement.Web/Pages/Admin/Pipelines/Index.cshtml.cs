@@ -1,9 +1,11 @@
 using CRMManagement.Application.Abstractions;
 using CRMManagement.Application.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace CRMManagement.Web.Pages.Admin.Pipelines;
 
+[Authorize(Roles = "Admin")]
 public sealed class IndexModel : PageModel
 {
     private readonly IPipelineService _svc;

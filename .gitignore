@@ -39,3 +39,4 @@ Thumbs.db
 # Docker / publish artifacts
 publish/
 out/
+docs/

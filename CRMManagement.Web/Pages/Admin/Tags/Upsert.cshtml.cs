@@ -1,10 +1,12 @@
 using CRMManagement.Application.Abstractions;
 using CRMManagement.Application.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace CRMManagement.Web.Pages.Admin.Tags;
 
+[Authorize(Roles = "Admin")]
 public sealed class UpsertModel : PageModel
 {
     private readonly ITagService _svc;
