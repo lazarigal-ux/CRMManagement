@@ -64,6 +64,7 @@ public sealed class AppDbContext : IdentityDbContext<
     public DbSet<SavedView> SavedViews => Set<SavedView>();
     public DbSet<ZohoConnection> ZohoConnections => Set<ZohoConnection>();
     public DbSet<ZohoImportJob> ZohoImportJobs => Set<ZohoImportJob>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Vendor> Vendors => Set<Vendor>();
     public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
     public DbSet<PurchaseOrderLine> PurchaseOrderLines => Set<PurchaseOrderLine>();
@@ -652,6 +653,17 @@ public sealed class AppDbContext : IdentityDbContext<
             b.Property(x => x.AccessTokenProtected);
             b.Property(x => x.AccessTokenExpiresAt);
             b.HasIndex(x => x.CompanyId).IsUnique().HasFilter("\"CompanyId\" is not null");
+        });
+
+        builder.Entity<RefreshToken>(b =>
+        {
+            b.ToTable("crm_refresh_tokens", Schema);
+            b.HasKey(x => x.Id);
+            b.Property(x => x.TokenType).HasMaxLength(50).IsRequired();
+            b.Property(x => x.Value).IsRequired();
+            b.Property(x => x.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
+            b.HasIndex(x => new { x.UserId, x.TokenType });
+            b.HasIndex(x => x.ExpiresAt);
         });
 
         builder.Entity<ZohoImportJob>(b =>
