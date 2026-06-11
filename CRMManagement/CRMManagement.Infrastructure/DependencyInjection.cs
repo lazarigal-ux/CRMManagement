@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using System.Security.Claims;
@@ -94,7 +95,10 @@ public static class DependencyInjection
 
         services.AddScoped<DbInitializer>();
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
-        services.AddScoped<ITokenStore, EfTokenStore>();
+        services.AddScoped<EfTokenStore>();
+        services.AddScoped<ITokenStore>(sp => new CachingTokenStore(
+            sp.GetRequiredService<EfTokenStore>(),
+            sp.GetRequiredService<IMemoryCache>()));
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IUserAdminService, UserAdminService>();
         services.AddScoped<ILeadService, LeadService>();
