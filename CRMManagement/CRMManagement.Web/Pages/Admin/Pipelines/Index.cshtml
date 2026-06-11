@@ -1,0 +1,101 @@
+@page
+@model CRMManagement.Web.Pages.Admin.Pipelines.IndexModel
+@{ ViewData["Title"] = "Admin - Pipelines"; }
+
+<style>
+    .ml-auto{margin-left:auto}.flex-nowrap{flex-wrap:nowrap}.text-\[12px\]{font-size:12px}.text-\[11px\]{font-size:11px}.text-\[10px\]{font-size:10px}.text-\[9px\]{font-size:9px}.text-emerald-400{color:rgb(52 211 153)}.text-sky-400{color:rgb(56 189 248)}.bg-brand\/15{background-color:rgba(59,130,246,.15)}.border-brand\/30{border-color:rgba(59,130,246,.3)}.hover\:opacity-80:hover{opacity:.8}.shrink-0{flex-shrink:0}.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}
+
+    .pipe-table{border-collapse:collapse}
+    .pipe-table th,.pipe-table td{border-right:1px solid rgba(148,163,184,.2)!important}
+    .pipe-table th:last-child,.pipe-table td:last-child{border-right:none!important}
+    .pipe-table tbody td{border-bottom:1px solid rgba(148,163,184,.25)!important}
+    .pipe-table thead th{border-bottom:1px solid rgba(148,163,184,.35)!important}
+
+    html[data-theme="gray"] .pipe-table-card{background:rgb(51,65,85)!important;border-color:rgba(148,163,184,.45)!important;box-shadow:0 6px 24px -4px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.07)!important}
+    html[data-theme="black"] .pipe-table-card{background:rgb(22,22,22)!important;border-color:rgba(255,255,255,.08)!important;box-shadow:0 2px 12px rgba(0,0,0,.6)!important}
+    html[data-theme="black"] .pipe-table-card .pipe-toolbar{border-bottom-color:rgba(255,255,255,.06)!important}
+    html[data-theme="black"] .pipe-table-card .pipe-toolbar-btn{border-color:rgba(255,255,255,.12)!important}
+    html[data-theme="black"] .pipe-table-card thead tr:first-child{background:rgba(255,255,255,.04)!important}
+    html[data-theme="black"] .pipe-table-card tbody tr:hover{background:rgba(255,255,255,.06)!important}
+    html[data-theme="light"] .pipe-table-card{background:#ffffff!important;border-color:#d5dbdb!important;box-shadow:0 1px 4px rgba(0,0,0,.08)!important;color:#16191f!important}
+    html[data-theme="light"] .pipe-table-card .pipe-toolbar{border-bottom-color:#e5e7eb!important}
+    html[data-theme="light"] .pipe-table-card thead tr:first-child{background:#f7f8f8!important;color:#16191f!important}
+    html[data-theme="light"] .pipe-table-card tbody tr{color:#16191f!important}
+    html[data-theme="light"] .pipe-table-card tbody tr:hover{background:rgba(0,0,0,.03)!important}
+
+    .pipe-badge{display:inline-flex;align-items:center;gap:.35rem;padding:.15rem .6rem;border-radius:9999px;font-size:10px;font-weight:600;border:1px solid transparent;white-space:nowrap}
+    .pipe-badge--yes{background:rgba(52,211,153,.10);border-color:rgba(52,211,153,.25);color:rgb(52 211 153)}
+    .pipe-badge--no{background:rgba(148,163,184,.10);border-color:rgba(148,163,184,.25);color:rgb(148 163 184)}
+    .pipe-badge--default-tag{background:rgba(56,189,248,.10);border-color:rgba(56,189,248,.25);color:rgb(56 189 248)}
+
+    .pipe-sub-header{padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid light-dark(#e5e7eb,rgba(71,85,105,.35))}
+
+    @@media(max-width:640px){
+        .pipe-toolbar{flex-wrap:wrap;padding:.5rem .75rem;gap:.4rem}
+        .pipe-toolbar .ml-auto{flex-wrap:wrap;gap:.3rem}
+        .pipe-toolbar .ml-auto button>span,.pipe-toolbar .ml-auto a>span{display:none}
+        .pipe-toolbar h3{font-size:.7rem}
+        .pipe-table th,.pipe-table td{padding-left:.35rem;padding-right:.35rem;font-size:10px}
+        .pipe-sub-header{padding:.5rem .75rem;flex-wrap:wrap;gap:.35rem}
+        .pipe-sub-header h4{font-size:.7rem}
+        .pipe-badge{font-size:9px;padding:.1rem .45rem}
+    }
+</style>
+
+<section class="w-full mt-2" style="padding-left:0;" data-page="crm-pipelines">
+    <div class="w-full rounded-2xl border overflow-hidden pipe-table-card"
+         style="background:light-dark(#ffffff,rgb(51,65,85));border-color:light-dark(#d5dbdb,rgba(71,85,105,.5));box-shadow:light-dark(0 1px 4px rgba(0,0,0,.1),0 2px 8px rgba(0,0,0,.35));color:light-dark(#16191f,#f1f5f9)">
+
+        <div class="flex items-center gap-2 px-4 py-3 pipe-toolbar" style="border-bottom:1px solid light-dark(#d5dbdb,rgba(71,85,105,.4))">
+            <i class="fa-solid fa-diagram-project text-sm" style="color:light-dark(#0073bb,#60a5fa)"></i>
+            <h3 class="text-sm font-semibold uppercase tracking-wider" style="color:light-dark(#545b64,#cbd5e1)">Pipelines</h3>
+            <div class="ml-auto flex items-center justify-end gap-2 flex-nowrap">
+                <a asp-page="/Admin/Pipelines/Upsert" class="inline-flex items-center gap-2 rounded-full border ring-1 px-3 py-1.5 text-sm hover:opacity-80 transition pipe-toolbar-btn" style="border-color:light-dark(#aab7b8,rgba(100,116,139,.6));ring-color:light-dark(rgba(0,0,0,.06),rgba(148,163,184,.2))" title="Add new pipeline"><i class="fa-solid fa-plus text-[12px] text-emerald-400"></i><span>New</span></a>
+                <span class="inline-flex items-center gap-1 rounded-full bg-brand/15 border border-brand/30 px-3 py-0.5 text-xs font-semibold" style="color:light-dark(#0073bb,rgb(96 165 250))"><i class="fa-solid fa-hashtag text-[9px]"></i>@Model.Items.Count</span>
+            </div>
+        </div>
+
+        @foreach(var p in Model.Items){
+            <div class="pipe-sub-header" style="background:light-dark(#f7f8f8,rgba(30,41,59,.5))">
+                <div>
+                    <span class="text-sm font-semibold" style="color:light-dark(#16191f,#f1f5f9)">@p.Name</span>
+                    @if(p.IsDefault){<span class="pipe-badge pipe-badge--default-tag ml-2">(default)</span>}
+                    @if(!string.IsNullOrWhiteSpace(p.Description)){<div class="text-xs mt-0.5" style="color:light-dark(#545b64,#94a3b8)">@p.Description</div>}
+                </div>
+                <a asp-page="/Admin/Pipelines/Upsert" asp-route-id="@p.Id"
+                   class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-medium hover:opacity-80 transition"
+                   style="border-color:light-dark(#aab7b8,rgba(100,116,139,.5));color:light-dark(#0073bb,#60a5fa)">
+                    <i class="fa-solid fa-pen-to-square text-[9px]"></i>Edit
+                </a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="pipe-table min-w-full">
+                    <thead>
+                        <tr style="background:light-dark(#f7f8f8,rgba(30,41,59,.8));color:light-dark(#16191f,#f1f5f9)" class="text-[11px] uppercase tracking-wide select-none">
+                            <th class="px-3 py-3 text-left align-top whitespace-nowrap"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-layer-group text-[10px]"></i><span>Stage</span></span></th>
+                            <th class="px-3 py-3 text-left align-top whitespace-nowrap"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-sort-numeric-up text-[10px]"></i><span>Order</span></span></th>
+                            <th class="px-3 py-3 text-left align-top whitespace-nowrap"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-percent text-[10px]"></i><span>Probability</span></span></th>
+                            <th class="px-3 py-3 text-left align-top whitespace-nowrap"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-trophy text-[10px]"></i><span>Won</span></span></th>
+                            <th class="px-3 py-3 text-left align-top whitespace-nowrap"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-xmark text-[10px]"></i><span>Lost</span></span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach(var s in p.Stages.OrderBy(x=>x.SortOrder)){
+                        var wonClass=s.IsWon?"pipe-badge--yes":"pipe-badge--no";
+                        var lostClass=s.IsLost?"pipe-badge--yes":"pipe-badge--no";
+                        <tr class="hover:opacity-90 transition-colors align-top" style="border-top:1px solid light-dark(#e5e7eb,rgba(71,85,105,.5))">
+                            <td class="px-3 py-3 text-xs whitespace-nowrap"><span class="font-medium">@s.Name</span></td>
+                            <td class="px-3 py-3 text-xs whitespace-nowrap">@s.SortOrder</td>
+                            <td class="px-3 py-3 text-xs whitespace-nowrap">@(s.Probability)%</td>
+                            <td class="px-3 py-3 text-xs whitespace-nowrap"><span class="pipe-badge @wonClass">@s.IsWon</span></td>
+                            <td class="px-3 py-3 text-xs whitespace-nowrap"><span class="pipe-badge @lostClass">@s.IsLost</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @if(Model.Items.Count==0){<div class="px-4 py-8 text-center" style="color:light-dark(#545b64,#94a3b8);border-top:1px solid light-dark(#d5dbdb,rgba(71,85,105,.4))">No pipelines found.</div>}
+    </div>
+</section>

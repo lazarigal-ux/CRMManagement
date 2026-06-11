@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/TestResults/
+qa-logs/
+.git/
+.gitignore
+README.md
+*.user
+*.suo

@@ -1,0 +1,24 @@
+@model (string EntityType, System.Guid EntityId)
+@inject CRMManagement.Application.Abstractions.ICustomFieldQueryService CustomFields
+@{
+    if (Model.EntityId == System.Guid.Empty || string.IsNullOrEmpty(Model.EntityType)) { return; }
+    var values = await CustomFields.GetForEntityAsync(Model.EntityType, Model.EntityId, ViewContext.HttpContext.RequestAborted);
+    if (values.Count == 0) { return; }
+}
+
+<div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 mt-4">
+    <h2 class="text-sm font-semibold text-slate-100 mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-puzzle-piece text-xs text-amber-400"></i>
+        Custom Fields
+        <span class="text-xs text-slate-400 font-normal">(synced from Zoho)</span>
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        @foreach (var v in values)
+        {
+            <div>
+                <div class="text-xs text-slate-400">@v.Label</div>
+                <div class="whitespace-pre-line">@(string.IsNullOrEmpty(v.Value) ? "—" : v.Value)</div>
+            </div>
+        }
+    </div>
+</div>

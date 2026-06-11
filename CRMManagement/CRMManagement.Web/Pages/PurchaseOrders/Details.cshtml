@@ -1,0 +1,72 @@
+@page "{id:guid}"
+@model CRMManagement.Web.Pages.PurchaseOrders.DetailsModel
+@{
+    ViewData["Title"] = $"PO {Model.Item?.PoNumber}";
+    var p = Model.Item!;
+}
+
+<section class="p-4 space-y-4 text-slate-200 max-w-5xl">
+    <div class="flex items-center justify-between">
+        <div>
+            <a asp-page="/PurchaseOrders/Index" class="text-xs text-slate-400 hover:underline"><i class="fa-solid fa-arrow-left text-[10px]"></i> Back to Purchase Orders</a>
+            <h1 class="text-2xl font-semibold text-slate-100 mt-1"><span class="font-mono text-slate-300">@p.PoNumber</span> · @p.Subject</h1>
+            <p class="text-xs text-slate-400 mt-1">Status: <span class="px-2 py-0.5 rounded-full bg-slate-700/40 border border-slate-600/40">@p.Status</span></p>
+        </div>
+        <div class="flex gap-2">
+            <a asp-page="/PurchaseOrders/Upsert" asp-route-id="@p.Id" class="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-sm">Edit</a>
+            <form method="post" asp-page-handler="Delete" asp-route-id="@p.Id" onsubmit="return confirm('Delete this PO?');">
+                <button class="px-3 py-1.5 rounded-xl bg-rose-700 hover:bg-rose-600 text-white text-sm">Delete</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div><div class="text-xs text-slate-400">PO Date</div><div>@(p.PoDate?.ToString("yyyy-MM-dd") ?? "—")</div></div>
+        <div><div class="text-xs text-slate-400">Due Date</div><div>@(p.DueDate?.ToString("yyyy-MM-dd") ?? "—")</div></div>
+        <div><div class="text-xs text-slate-400">Carrier</div><div>@(p.CarrierName ?? "—")</div></div>
+        <div><div class="text-xs text-slate-400">Currency</div><div>@p.Currency</div></div>
+        <div class="md:col-span-2"><div class="text-xs text-slate-400">Description</div><div class="whitespace-pre-line">@(p.Description ?? "—")</div></div>
+        <div><div class="text-xs text-slate-400">Billing Address</div><div class="whitespace-pre-line">@(p.BillingAddress ?? "—")</div></div>
+        <div><div class="text-xs text-slate-400">Shipping Address</div><div class="whitespace-pre-line">@(p.ShippingAddress ?? "—")</div></div>
+        <div class="md:col-span-2"><div class="text-xs text-slate-400">Terms &amp; Conditions</div><div class="whitespace-pre-line">@(p.TermsAndConditions ?? "—")</div></div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-700/40 text-sm font-semibold">Line Items</div>
+        <table class="min-w-full text-sm">
+            <thead class="text-xs text-slate-400 uppercase bg-slate-900/40">
+                <tr>
+                    <th class="text-left px-3 py-2">Description</th>
+                    <th class="text-right px-3 py-2">Qty</th>
+                    <th class="text-right px-3 py-2">Unit Price</th>
+                    <th class="text-right px-3 py-2">Discount</th>
+                    <th class="text-right px-3 py-2">Total</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700/40">
+                @if (p.Lines.Count == 0)
+                {
+                    <tr><td colspan="5" class="px-3 py-6 text-center text-slate-400">No line items.</td></tr>
+                }
+                @foreach (var l in p.Lines)
+                {
+                    <tr>
+                        <td class="px-3 py-2">@l.Description</td>
+                        <td class="px-3 py-2 text-right font-mono">@l.Quantity.ToString("N2")</td>
+                        <td class="px-3 py-2 text-right font-mono">@l.UnitPrice.ToString("N2")</td>
+                        <td class="px-3 py-2 text-right font-mono">@l.Discount.ToString("N2")</td>
+                        <td class="px-3 py-2 text-right font-mono">@l.LineTotal.ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot class="text-sm bg-slate-900/40">
+                <tr><td colspan="4" class="px-3 py-1 text-right text-slate-400">Subtotal</td><td class="px-3 py-1 text-right font-mono">@p.Subtotal.ToString("N2")</td></tr>
+                <tr><td colspan="4" class="px-3 py-1 text-right text-slate-400">Discount</td><td class="px-3 py-1 text-right font-mono">@p.Discount.ToString("N2")</td></tr>
+                <tr><td colspan="4" class="px-3 py-1 text-right text-slate-400">Tax</td><td class="px-3 py-1 text-right font-mono">@p.Tax.ToString("N2")</td></tr>
+                <tr><td colspan="4" class="px-3 py-1 text-right text-slate-400">Adjustment</td><td class="px-3 py-1 text-right font-mono">@p.AdjustmentAmount.ToString("N2")</td></tr>
+                <tr><td colspan="4" class="px-3 py-2 text-right font-semibold">Total</td><td class="px-3 py-2 text-right font-mono font-semibold">@p.Total.ToString("N2") @p.Currency</td></tr>
+            </tfoot>
+        </table>
+    </div>
+    <partial name="_CustomFields" model='(EntityType: "PurchaseOrder", EntityId: Model.Item!.Id)' />
+</section>

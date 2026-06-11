@@ -1,0 +1,156 @@
+using CRMManagement.Application.Abstractions;
+using CRMManagement.Application.DTOs;
+using CRMManagement.Infrastructure.Data;
+using CRMManagement.Infrastructure.Services;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
+
+namespace CRMManagement.Web.Configuration;
+
+/// <summary>
+/// Read-only API for the imported Zoho data. Endpoints query the local Postgres mirror
+/// (populated by ZohoImportService) — they do NOT call Zoho live, so they are not subject
+/// to Zoho API rate limits and remain available even when the OAuth token is missing.
+/// Mirrors the pattern used by WorkManagement/Jira: import → local DB → Razor Pages + API.
+/// </summary>
+public static class ZohoEndpoints
+{
+    public static IEndpointRouteBuilder MapZohoApi(this IEndpointRouteBuilder app)
+    {
+        // Anonymous like WorkManagement/Jira's read paths: once data is in the local Postgres mirror,
+        // it's just data — no Zoho login (or any login) required to view it. The import-trigger
+        // endpoints in Program.cs and the OAuth admin pages remain protected.
+        var group = app.MapGroup("/api/zoho");
+
+        // Live health-check still uses the Zoho reader so callers can verify the OAuth connection works.
+        // Stays authenticated because it makes a live outbound call (avoid being a Zoho-ping proxy for randoms).
+        group.MapGet("/health", async (IZohoCrmReader r, CancellationToken ct) =>
+            Results.Ok(await r.HealthAsync(ct))).RequireAuthorization();
+
+        // Latest import job summary — tells clients how stale the local mirror is.
+        group.MapGet("/sync-status", async (IZohoImportService imports, CancellationToken ct) =>
+        {
+            var dto = await imports.GetLatestJobAsync(ct);
+            return dto is null ? Results.NoContent() : Results.Ok(dto);
+        });
+
+        group.MapGet("/leads", async (int? page, int? per_page, AppDbContext db, CancellationToken ct) =>
+        {
+            var (p, pp) = NormalizePaging(page, per_page);
+            var q = db.Leads.AsNoTracking().OrderByDescending(l => l.ZohoModifiedTime).ThenByDescending(l => l.Id);
+            var total = await q.CountAsync(ct);
+            var items = await q.Skip((p - 1) * pp).Take(pp)
+                .Select(l => new ZohoLeadListItemDto(
+                    l.Id, l.ZohoId, l.FirstName, l.LastName, l.Company, l.Email, l.Phone,
+                    l.Status, l.Source, l.OwnerUserId, l.ZohoModifiedTime))
+                .ToListAsync(ct);
+            return Results.Ok(new CrmListResult<ZohoLeadListItemDto>(p, pp, total, p * pp < total, items));
+        });
+
+        group.MapGet("/leads/{id}", async (string id, AppDbContext db, CancellationToken ct) =>
+        {
+            var hasLocal = Guid.TryParse(id, out var local);
+            var dto = await db.Leads.AsNoTracking()
+                .Where(l => (hasLocal && l.Id == local) || l.ZohoId == id)
+                .Select(l => new ZohoLeadListItemDto(
+                    l.Id, l.ZohoId, l.FirstName, l.LastName, l.Company, l.Email, l.Phone,
+                    l.Status, l.Source, l.OwnerUserId, l.ZohoModifiedTime))
+                .FirstOrDefaultAsync(ct);
+            return dto is null ? Results.NotFound() : Results.Ok(dto);
+        });
+
+        group.MapGet("/contacts", async (int? page, int? per_page, AppDbContext db, CancellationToken ct) =>
+        {
+            var (p, pp) = NormalizePaging(page, per_page);
+            var q = db.Contacts.AsNoTracking().OrderByDescending(c => c.ZohoModifiedTime).ThenByDescending(c => c.Id);
+            var total = await q.CountAsync(ct);
+            var items = await q.Skip((p - 1) * pp).Take(pp)
+                .Select(c => new ZohoContactListItemDto(
+                    c.Id, c.ZohoId, c.FirstName, c.LastName, c.Email, c.Phone, c.Mobile,
+                    c.AccountId, c.OwnerUserId, c.ZohoModifiedTime))
+                .ToListAsync(ct);
+            return Results.Ok(new CrmListResult<ZohoContactListItemDto>(p, pp, total, p * pp < total, items));
+        });
+
+        group.MapGet("/contacts/{id}", async (string id, AppDbContext db, CancellationToken ct) =>
+        {
+            var hasLocal = Guid.TryParse(id, out var local);
+            var dto = await db.Contacts.AsNoTracking()
+                .Where(c => (hasLocal && c.Id == local) || c.ZohoId == id)
+                .Select(c => new ZohoContactListItemDto(
+                    c.Id, c.ZohoId, c.FirstName, c.LastName, c.Email, c.Phone, c.Mobile,
+                    c.AccountId, c.OwnerUserId, c.ZohoModifiedTime))
+                .FirstOrDefaultAsync(ct);
+            return dto is null ? Results.NotFound() : Results.Ok(dto);
+        });
+
+        group.MapGet("/accounts", async (int? page, int? per_page, AppDbContext db, CancellationToken ct) =>
+        {
+            var (p, pp) = NormalizePaging(page, per_page);
+            var q = db.Accounts.AsNoTracking().OrderByDescending(a => a.ZohoModifiedTime).ThenByDescending(a => a.Id);
+            var total = await q.CountAsync(ct);
+            var items = await q.Skip((p - 1) * pp).Take(pp)
+                .Select(a => new ZohoAccountListItemDto(
+                    a.Id, a.ZohoId, a.Name, a.Industry, a.Website, a.Phone,
+                    a.AccountType, a.OwnerUserId, a.ZohoModifiedTime))
+                .ToListAsync(ct);
+            return Results.Ok(new CrmListResult<ZohoAccountListItemDto>(p, pp, total, p * pp < total, items));
+        });
+
+        group.MapGet("/accounts/{id}", async (string id, AppDbContext db, CancellationToken ct) =>
+        {
+            var hasLocal = Guid.TryParse(id, out var local);
+            var dto = await db.Accounts.AsNoTracking()
+                .Where(a => (hasLocal && a.Id == local) || a.ZohoId == id)
+                .Select(a => new ZohoAccountListItemDto(
+                    a.Id, a.ZohoId, a.Name, a.Industry, a.Website, a.Phone,
+                    a.AccountType, a.OwnerUserId, a.ZohoModifiedTime))
+                .FirstOrDefaultAsync(ct);
+            return dto is null ? Results.NotFound() : Results.Ok(dto);
+        });
+
+        // Zoho Deals are imported into the local Opportunities table (see ZohoImportService.ImportDealsAsync).
+        group.MapGet("/deals", async (int? page, int? per_page, AppDbContext db, CancellationToken ct) =>
+        {
+            var (p, pp) = NormalizePaging(page, per_page);
+            var q = db.Opportunities.AsNoTracking().OrderByDescending(o => o.ZohoModifiedTime).ThenByDescending(o => o.Id);
+            var total = await q.CountAsync(ct);
+            var items = await q.Skip((p - 1) * pp).Take(pp)
+                .Select(o => new ZohoOpportunityListItemDto(
+                    o.Id, o.ZohoId, o.Name, o.AccountId, o.ContactId, o.Amount, o.Currency,
+                    o.CloseDate, o.Probability, o.Status, o.LeadSource, o.OwnerUserId, o.ZohoModifiedTime))
+                .ToListAsync(ct);
+            return Results.Ok(new CrmListResult<ZohoOpportunityListItemDto>(p, pp, total, p * pp < total, items));
+        });
+
+        group.MapGet("/deals/{id}", async (string id, AppDbContext db, CancellationToken ct) =>
+        {
+            var hasLocal = Guid.TryParse(id, out var local);
+            var dto = await db.Opportunities.AsNoTracking()
+                .Where(o => (hasLocal && o.Id == local) || o.ZohoId == id)
+                .Select(o => new ZohoOpportunityListItemDto(
+                    o.Id, o.ZohoId, o.Name, o.AccountId, o.ContactId, o.Amount, o.Currency,
+                    o.CloseDate, o.Probability, o.Status, o.LeadSource, o.OwnerUserId, o.ZohoModifiedTime))
+                .FirstOrDefaultAsync(ct);
+            return dto is null ? Results.NotFound() : Results.Ok(dto);
+        });
+
+        return app;
+    }
+
+    /// <summary>
+    /// Live phase status of the running import — mirrors WorkManagement's /api/jira-import/status.
+    /// AllowAnonymous so a global progress banner can poll it from any page (including pre-auth ones).
+    /// </summary>
+    public static IEndpointRouteBuilder MapZohoImportApi(this IEndpointRouteBuilder app)
+    {
+        app.MapGet("/api/zoho-import/status", (IZohoImportStatusService status) =>
+            Results.Json(status.GetStatus())).AllowAnonymous();
+        return app;
+    }
+
+    private static (int Page, int PerPage) NormalizePaging(int? page, int? perPage)
+        => (Math.Max(1, page ?? 1), Math.Clamp(perPage ?? 50, 1, 200));
+}

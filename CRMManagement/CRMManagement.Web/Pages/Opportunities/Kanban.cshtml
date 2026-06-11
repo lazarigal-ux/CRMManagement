@@ -1,0 +1,242 @@
+@page
+@model CRMManagement.Web.Pages.Opportunities.KanbanModel
+@{ ViewData["Title"] = "Opportunities - Kanban"; }
+
+<style>
+    .kbn-shell { padding: 1rem; }
+    .kbn-toolbar {
+        display: flex; flex-wrap: wrap; align-items: center; gap: .6rem;
+        margin-bottom: 1rem;
+    }
+    .kbn-toolbar input, .kbn-toolbar select {
+        padding: .4rem .75rem;
+        border-radius: .65rem;
+        border: 1px solid light-dark(#aab7b8, rgba(100,116,139,.55));
+        background: light-dark(#ffffff, rgba(30,41,59,.5));
+        color: light-dark(#16191f, #f1f5f9);
+        font-size: .82rem;
+        outline: none;
+    }
+    .kbn-toolbar input:focus, .kbn-toolbar select:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59,130,246,.18);
+    }
+    .kbn-pipeline {
+        border-radius: 1rem;
+        border: 1px solid light-dark(#d5dbdb, rgba(71,85,105,.5));
+        background: light-dark(#ffffff, rgba(30,41,59,.4));
+        padding: 1rem 1.1rem 1.25rem;
+        margin-bottom: 1.25rem;
+    }
+    .kbn-pipeline h2 {
+        font-size: 1rem; font-weight: 600;
+        color: light-dark(#16191f, #f1f5f9);
+        margin-bottom: .85rem;
+    }
+    .kbn-cols {
+        display: grid;
+        gap: .75rem;
+        overflow-x: auto;
+    }
+    .kbn-col {
+        border-radius: .85rem;
+        border: 1px solid light-dark(#d5dbdb, rgb(51 65 85));
+        background: light-dark(#f7f8f8, rgba(15,23,42,.6));
+        padding: .65rem .75rem .8rem;
+        min-width: 0;
+        display: flex; flex-direction: column;
+    }
+    .kbn-col-head {
+        display: flex; align-items: baseline; gap: .4rem;
+        padding-bottom: .55rem;
+        border-bottom: 1px solid light-dark(#e5e7eb, rgba(255,255,255,.06));
+        margin-bottom: .55rem;
+    }
+    .kbn-col-head .kbn-pct {
+        font-size: .7rem; font-weight: 700;
+        color: light-dark(#0073bb, #7dd3fc);
+    }
+    .kbn-col-head .kbn-cnt {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 1.25rem; height: 1.1rem; padding: 0 .35rem;
+        border-radius: 999px;
+        background: light-dark(rgba(0,115,187,.12), rgba(125,211,252,.18));
+        color: light-dark(#0073bb, #7dd3fc);
+        font-size: .65rem; font-weight: 700;
+    }
+    .kbn-col-head .kbn-name {
+        font-size: .72rem; font-weight: 700; letter-spacing: .08em;
+        text-transform: uppercase;
+        color: light-dark(#16191f, #f1f5f9);
+    }
+    .kbn-col-head .kbn-name.won  { color: #059669; }
+    .kbn-col-head .kbn-name.lost { color: #dc2626; }
+    .kbn-col-total {
+        margin-top: -.15rem; margin-bottom: .55rem;
+        font-size: .8rem; font-weight: 600;
+        color: light-dark(#16191f, #f1f5f9);
+    }
+    .kbn-card {
+        border-radius: .65rem;
+        border: 1px solid light-dark(#e5e7eb, rgba(71,85,105,.6));
+        background: light-dark(#ffffff, rgba(30,41,59,.85));
+        padding: .55rem .65rem;
+        margin-bottom: .5rem;
+    }
+    .kbn-card .kbn-card-name {
+        font-size: .8rem; font-weight: 600;
+        color: light-dark(#16191f, #f1f5f9);
+        line-height: 1.25;
+    }
+    .kbn-card .kbn-card-amount {
+        margin-top: .2rem;
+        font-size: .75rem;
+        color: light-dark(#0073bb, #7dd3fc);
+        font-weight: 600;
+    }
+    .kbn-card .kbn-card-meta {
+        margin-top: .2rem;
+        font-size: .68rem;
+        color: light-dark(#687078, #94a3b8);
+    }
+    .kbn-card-actions { display: flex; gap: .35rem; margin-top: .45rem; }
+    .kbn-card-actions a, .kbn-card-actions button {
+        font-size: .68rem;
+        padding: .15rem .45rem;
+        border-radius: .35rem;
+        border: 1px solid transparent;
+        background: transparent;
+    }
+    .kbn-card-actions a {
+        color: #2563eb;
+        border-color: light-dark(#dbeafe, rgba(59,130,246,.35));
+    }
+    .kbn-card-actions a:hover { background: rgba(59,130,246,.08); }
+    .kbn-card-actions button {
+        cursor: pointer;
+        color: #059669;
+        border-color: light-dark(#d1fae5, rgba(16,185,129,.35));
+    }
+    .kbn-card-actions button:hover { background: rgba(16,185,129,.08); }
+
+    .kbn-empty {
+        padding: .55rem .35rem;
+        font-size: .7rem;
+        color: light-dark(#687078, #94a3b8);
+    }
+</style>
+
+<section class="kbn-shell" data-page="crm-kanban">
+    <div class="kbn-toolbar">
+        <h1 class="text-2xl font-semibold" style="color:light-dark(#16191f,#f1f5f9)">Pipeline</h1>
+        <div class="ml-auto flex items-center gap-2">
+            <input id="kbnSearch" type="search" placeholder="Search by name..." />
+            <select id="kbnSort">
+                <option value="default">Sort: default</option>
+                <option value="amount-desc">Amount (high → low)</option>
+                <option value="amount-asc">Amount (low → high)</option>
+                <option value="close-asc">Close date (soonest)</option>
+                <option value="close-desc">Close date (latest)</option>
+            </select>
+        </div>
+    </div>
+
+    @foreach (var p in Model.Pipelines)
+    {
+        var orderedStages = p.Stages.OrderBy(s => s.SortOrder).ToList();
+        <div class="kbn-pipeline">
+            <h2>@p.Name</h2>
+            <div class="kbn-cols" style="grid-template-columns: repeat(@orderedStages.Count, minmax(220px, 1fr));">
+                @for (int i = 0; i < orderedStages.Count; i++)
+                {
+                    var stage = orderedStages[i];
+                    var nextStage = i + 1 < orderedStages.Count ? orderedStages[i + 1] : null;
+                    var cards = Model.Items.Where(o => o.StageId == stage.Id).ToList();
+                    var stageTotal = cards.Sum(c => c.Amount);
+                    var headCls = stage.IsWon ? "won" : (stage.IsLost ? "lost" : "");
+
+                    <div class="kbn-col" data-stage-col data-stage-id="@stage.Id">
+                        <div class="kbn-col-head">
+                            <span class="kbn-cnt">@cards.Count</span>
+                            <span class="kbn-pct">@stage.Probability%</span>
+                            <span class="kbn-name @headCls">@stage.Name</span>
+                        </div>
+                        <div class="kbn-col-total" data-col-total>@stageTotal.ToString("N2")</div>
+                        <div class="kbn-col-list" data-col-list>
+                            @if (cards.Count == 0)
+                            {
+                                <div class="kbn-empty">No deals.</div>
+                            }
+                            @foreach (var o in cards.OrderByDescending(c => c.Amount))
+                            {
+                                <div class="kbn-card" data-card data-name="@o.Name.ToLowerInvariant()" data-amount="@o.Amount" data-close="@(o.CloseDate?.ToString("yyyy-MM-dd") ?? "")">
+                                    <div class="kbn-card-name">@o.Name</div>
+                                    <div class="kbn-card-amount">@o.Amount.ToString("N2") @o.Currency</div>
+                                    @if (o.CloseDate.HasValue)
+                                    {
+                                        <div class="kbn-card-meta">Closes @o.CloseDate.Value.ToString("yyyy-MM-dd")</div>
+                                    }
+                                    <div class="kbn-card-actions">
+                                        <a asp-page="/Opportunities/Details" asp-route-id="@o.Id">Open</a>
+                                        @if (nextStage is not null)
+                                        {
+                                            <form method="post" asp-page-handler="AdvanceStage" asp-route-id="@o.Id" asp-route-stageId="@nextStage.Id">
+                                                <button type="submit" title="Advance to @nextStage.Name">→ @nextStage.Name</button>
+                                            </form>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</section>
+
+@section Scripts {
+    <script>
+        (function () {
+            var search = document.getElementById('kbnSearch');
+            var sort = document.getElementById('kbnSort');
+            var cols = Array.prototype.slice.call(document.querySelectorAll('[data-stage-col]'));
+            var nf = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            function applyFilter() {
+                var q = (search.value || '').trim().toLowerCase();
+                cols.forEach(function (col) {
+                    var visibleTotal = 0;
+                    col.querySelectorAll('[data-card]').forEach(function (card) {
+                        var name = card.getAttribute('data-name') || '';
+                        var hit = !q || name.indexOf(q) !== -1;
+                        card.style.display = hit ? '' : 'none';
+                        if (hit) visibleTotal += parseFloat(card.getAttribute('data-amount') || '0');
+                    });
+                    var totalEl = col.querySelector('[data-col-total]');
+                    if (totalEl) totalEl.textContent = nf.format(visibleTotal);
+                });
+            }
+
+            function applySort() {
+                var mode = sort.value;
+                cols.forEach(function (col) {
+                    var list = col.querySelector('[data-col-list]');
+                    if (!list) return;
+                    var cards = Array.prototype.slice.call(list.querySelectorAll('[data-card]'));
+                    cards.sort(function (a, b) {
+                        if (mode === 'amount-desc') return parseFloat(b.dataset.amount) - parseFloat(a.dataset.amount);
+                        if (mode === 'amount-asc')  return parseFloat(a.dataset.amount) - parseFloat(b.dataset.amount);
+                        if (mode === 'close-asc')   return (a.dataset.close || '9999').localeCompare(b.dataset.close || '9999');
+                        if (mode === 'close-desc')  return (b.dataset.close || '0000').localeCompare(a.dataset.close || '0000');
+                        return 0;
+                    });
+                    cards.forEach(function (c) { list.appendChild(c); });
+                });
+            }
+
+            if (search) search.addEventListener('input', applyFilter);
+            if (sort) sort.addEventListener('change', applySort);
+        })();
+    </script>
+}

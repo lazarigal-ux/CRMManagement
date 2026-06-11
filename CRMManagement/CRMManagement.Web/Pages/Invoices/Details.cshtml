@@ -1,0 +1,68 @@
+@page "{id:guid}"
+@model CRMManagement.Web.Pages.Invoices.DetailsModel
+@{
+    ViewData["Title"] = Model.Item?.InvoiceNumber ?? "Invoice";
+    var i = Model.Item!;
+}
+
+<section class="p-4 space-y-4 text-slate-200 max-w-5xl">
+    <div class="flex items-center justify-between">
+        <div>
+            <a asp-page="/Invoices/Index" class="text-xs text-slate-400 hover:underline"><i class="fa-solid fa-arrow-left text-[10px]"></i> Back to Invoices</a>
+            <h1 class="text-2xl font-semibold text-slate-100 mt-1">@i.InvoiceNumber</h1>
+            @if (!string.IsNullOrEmpty(i.Subject))
+            { <p class="text-xs text-slate-400 mt-1">@i.Subject</p> }
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+        <div><div class="text-xs text-slate-400">Status</div><div>@i.Status</div></div>
+        <div><div class="text-xs text-slate-400">Issued</div><div>@i.IssueDate.ToString("yyyy-MM-dd")</div></div>
+        <div><div class="text-xs text-slate-400">Due</div><div>@(i.DueDate?.ToString("yyyy-MM-dd") ?? "—")</div></div>
+        <div><div class="text-xs text-slate-400">Subtotal</div><div>@i.Subtotal.ToString("N2") @i.Currency</div></div>
+        <div><div class="text-xs text-slate-400">Tax</div><div>@i.Tax.ToString("N2") @i.Currency</div></div>
+        <div><div class="text-xs text-slate-400">Total</div><div class="text-base font-semibold">@i.Total.ToString("N2") @i.Currency</div></div>
+        <div><div class="text-xs text-slate-400">Paid</div><div>@i.AmountPaid.ToString("N2") @i.Currency</div></div>
+        <div><div class="text-xs text-slate-400">Account</div><div><a class="text-sky-300 hover:underline" asp-page="/Accounts/Details" asp-route-id="@i.AccountId">View account</a></div></div>
+        @if (i.OrderId is Guid oid)
+        {
+            <div><div class="text-xs text-slate-400">Sales Order</div><div><a class="text-sky-300 hover:underline" asp-page="/SalesOrders/Details" asp-route-id="@oid">View order</a></div></div>
+        }
+        <div class="md:col-span-3"><div class="text-xs text-slate-400">Notes</div><div class="whitespace-pre-line">@(i.Notes ?? "—")</div></div>
+        <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div><div class="text-xs text-slate-400">Billing Address</div><div class="whitespace-pre-line">@(i.BillingAddress ?? "—")</div></div>
+            <div><div class="text-xs text-slate-400">Shipping Address</div><div class="whitespace-pre-line">@(i.ShippingAddress ?? "—")</div></div>
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 overflow-hidden">
+        <div class="px-4 py-2 text-xs uppercase tracking-wider text-slate-400 border-b border-slate-700/40">Line items</div>
+        <table class="min-w-full text-sm">
+            <thead class="text-xs text-slate-400 uppercase bg-slate-900/40">
+                <tr>
+                    <th class="text-left px-3 py-2">#</th>
+                    <th class="text-left px-3 py-2">Description</th>
+                    <th class="text-right px-3 py-2">Qty</th>
+                    <th class="text-right px-3 py-2">Unit Price</th>
+                    <th class="text-right px-3 py-2">Line Total</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700/40">
+                @if (i.Lines.Count == 0)
+                {
+                    <tr><td colspan="5" class="px-3 py-4 text-center text-slate-400">No line items.</td></tr>
+                }
+                @foreach (var l in i.Lines)
+                {
+                    <tr>
+                        <td class="px-3 py-2 text-slate-400">@l.SortOrder</td>
+                        <td class="px-3 py-2 text-slate-200">@(l.Description ?? "—")</td>
+                        <td class="px-3 py-2 text-right text-slate-200 whitespace-nowrap">@l.Quantity.ToString("N2")</td>
+                        <td class="px-3 py-2 text-right text-slate-200 whitespace-nowrap">@l.UnitPrice.ToString("N2")</td>
+                        <td class="px-3 py-2 text-right text-slate-100 font-medium whitespace-nowrap">@l.LineTotal.ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

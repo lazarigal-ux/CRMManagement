@@ -1,0 +1,83 @@
+@page
+@model CRMManagement.Web.Pages.Admin.OutboxModel
+@{ ViewData["Title"] = "Integration Outbox"; }
+
+<section class="p-4 space-y-4 text-slate-200">
+    <header class="flex items-start justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-100">Integration Outbox</h1>
+            <p class="text-xs text-slate-400 mt-1">
+                Durable queue of outbound integration messages (CRM → IMS, etc.). Drainer retries every ~30s.
+                Messages stay <code>pending</code> when the target's <code>BaseUrl</code> isn't configured.
+            </p>
+        </div>
+        <form method="post" asp-page-handler="RetryAll" onsubmit="return confirm('Re-queue all failed entries?');">
+            <button class="px-3 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm">Retry all failed</button>
+        </form>
+    </header>
+
+    <div class="flex items-center gap-2 text-xs">
+        <span class="text-slate-400">Filter:</span>
+        <a asp-page="/Admin/Outbox" class="px-2 py-1 rounded @(Model.StatusFilter is null ? "bg-slate-700" : "bg-slate-800/40 hover:bg-slate-700/60")">All</a>
+        <a asp-page="/Admin/Outbox" asp-route-status="pending" class="px-2 py-1 rounded @(Model.StatusFilter == "pending" ? "bg-slate-700" : "bg-slate-800/40 hover:bg-slate-700/60")">Pending</a>
+        <a asp-page="/Admin/Outbox" asp-route-status="sent"    class="px-2 py-1 rounded @(Model.StatusFilter == "sent"    ? "bg-slate-700" : "bg-slate-800/40 hover:bg-slate-700/60")">Sent</a>
+        <a asp-page="/Admin/Outbox" asp-route-status="failed"  class="px-2 py-1 rounded @(Model.StatusFilter == "failed"  ? "bg-slate-700" : "bg-slate-800/40 hover:bg-slate-700/60")">Failed</a>
+    </div>
+
+    <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4">
+        @if (Model.Rows.Count == 0)
+        {
+            <p class="text-xs text-slate-400">No entries.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="text-xs text-slate-400 uppercase">
+                        <tr>
+                            <th class="text-left py-2">Created</th>
+                            <th class="text-left py-2">Target</th>
+                            <th class="text-left py-2">Status</th>
+                            <th class="text-right py-2">Attempts</th>
+                            <th class="text-left py-2">Last attempt</th>
+                            <th class="text-left py-2">Last error</th>
+                            <th class="text-left py-2">Related</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-700/40">
+                        @foreach (var r in Model.Rows)
+                        {
+                            string statusCls = r.Status switch
+                            {
+                                "sent"    => "text-emerald-300",
+                                "failed"  => "text-rose-300",
+                                "pending" => "text-amber-300",
+                                _         => "text-slate-300",
+                            };
+                            <tr>
+                                <td class="py-2 text-slate-400 whitespace-nowrap">@r.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td class="py-2"><code class="text-sky-300">@r.Target</code></td>
+                                <td class="py-2 @statusCls">@r.Status</td>
+                                <td class="py-2 text-right">@r.Attempts</td>
+                                <td class="py-2 text-slate-400 whitespace-nowrap">@(r.LastAttemptAt?.ToString("MM-dd HH:mm") ?? "—")</td>
+                                <td class="py-2 text-rose-200 max-w-md truncate" title="@r.LastError">@r.LastError</td>
+                                <td class="py-2 text-slate-400 whitespace-nowrap">
+                                    @(r.RelatedType is null ? "—" : $"{r.RelatedType} {r.RelatedId?.ToString().Substring(0, 8)}")
+                                </td>
+                                <td class="py-2 text-right">
+                                    @if (r.Status != "sent")
+                                    {
+                                        <form method="post" asp-page-handler="Retry" asp-route-id="@r.Id">
+                                            <button class="px-2 py-1 rounded bg-amber-700/60 hover:bg-amber-600 text-xs text-white">Retry</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>

@@ -1,0 +1,19 @@
+@model CRMManagement.Application.DTOs.DashboardSummaryDto
+@{
+    var s = Model;
+    if (s.MonthlyRevenueTarget <= 0) { return; }
+    var targetPct = Math.Min(100m, Math.Round(s.WonAmountThisMonth / s.MonthlyRevenueTarget * 100m, 1));
+}
+<div class="crm-dash-target-shell">
+    <div class="crm-dash-target-head">
+        <h3>Monthly revenue target</h3>
+        <div class="nums">@s.WonAmountThisMonth.ToString("N0") <span class="of">/ @s.MonthlyRevenueTarget.ToString("N0")</span></div>
+    </div>
+    <div class="crm-dash-bar-track">
+        <div class="crm-dash-bar-fill" style="width:@(targetPct.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+    </div>
+    <div class="crm-dash-target-foot">
+        <span>@targetPct.ToString("0.#")% of target</span>
+        <span>@((s.MonthlyRevenueTarget - s.WonAmountThisMonth).ToString("N0")) to go</span>
+    </div>
+</div>

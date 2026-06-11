@@ -1,0 +1,136 @@
+@page
+@model CRMManagement.Web.Pages.Pipelines.ForecastModel
+@{ ViewData["Title"] = "Pipeline Forecast"; }
+
+<section class="p-4 space-y-4 text-slate-200">
+    <header class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-100">Pipeline Forecast</h1>
+            <p class="text-xs text-slate-400 mt-1">Weighted forecast = amount × stage probability. Stale deals = past their stage SLA (or > 14 days if no SLA set).</p>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4">
+            <div class="text-xs uppercase tracking-wide text-slate-400">Open deals</div>
+            <div class="mt-1 text-2xl font-bold text-slate-100">@Model.TotalOpenCount</div>
+        </div>
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4">
+            <div class="text-xs uppercase tracking-wide text-slate-400">Total amount</div>
+            <div class="mt-1 text-2xl font-bold text-slate-100">@Model.TotalOpenAmount.ToString("N2")</div>
+        </div>
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4">
+            <div class="text-xs uppercase tracking-wide text-emerald-300">Weighted forecast</div>
+            <div class="mt-1 text-2xl font-bold text-emerald-200">@Model.TotalOpenWeighted.ToString("N2")</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-3">By month (weighted)</h2>
+            @if (Model.ByMonth.Count == 0)
+            {
+                <p class="text-xs text-slate-400">No deals with a close date.</p>
+            }
+            else
+            {
+                <table class="min-w-full text-sm">
+                    <thead class="text-xs text-slate-400 uppercase">
+                        <tr>
+                            <th class="text-left py-2">Month</th>
+                            <th class="text-right py-2">Deals</th>
+                            <th class="text-right py-2">Total</th>
+                            <th class="text-right py-2">Weighted</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-700/40">
+                        @foreach (var r in Model.ByMonth)
+                        {
+                            <tr>
+                                <td class="py-2">@($"{r.Year}-{r.Month:00}")</td>
+                                <td class="py-2 text-right">@r.DealCount</td>
+                                <td class="py-2 text-right">@r.Total.ToString("N2")</td>
+                                <td class="py-2 text-right text-emerald-300">@r.Weighted.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-3">By stage</h2>
+            @if (Model.ByStage.Count == 0)
+            {
+                <p class="text-xs text-slate-400">No open deals.</p>
+            }
+            else
+            {
+                <table class="min-w-full text-sm">
+                    <thead class="text-xs text-slate-400 uppercase">
+                        <tr>
+                            <th class="text-left py-2">Stage</th>
+                            <th class="text-right py-2">Prob.</th>
+                            <th class="text-right py-2">Deals</th>
+                            <th class="text-right py-2">Total</th>
+                            <th class="text-right py-2">Weighted</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-700/40">
+                        @foreach (var r in Model.ByStage)
+                        {
+                            <tr>
+                                <td class="py-2">
+                                    <span class="block">@r.StageName</span>
+                                    <span class="block text-xs text-slate-500">@r.PipelineName</span>
+                                </td>
+                                <td class="py-2 text-right">@r.Probability%</td>
+                                <td class="py-2 text-right">@r.DealCount</td>
+                                <td class="py-2 text-right">@r.Total.ToString("N2")</td>
+                                <td class="py-2 text-right text-emerald-300">@r.Weighted.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-rose-700/30 bg-rose-900/10 p-4">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-rose-300 mb-3">Stale deals — needs attention</h2>
+        @if (Model.StaleDeals.Count == 0)
+        {
+            <p class="text-xs text-slate-400">Nothing stale. Good shape.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="text-xs text-slate-400 uppercase">
+                        <tr>
+                            <th class="text-left py-2">Deal</th>
+                            <th class="text-left py-2">Stage</th>
+                            <th class="text-right py-2">Amount</th>
+                            <th class="text-right py-2">Days in stage</th>
+                            <th class="text-right py-2">SLA (h)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-700/40">
+                        @foreach (var s in Model.StaleDeals)
+                        {
+                            <tr>
+                                <td class="py-2">
+                                    <a asp-page="/Opportunities/Details" asp-route-id="@s.OpportunityId" class="text-sky-300 hover:underline">@s.Name</a>
+                                </td>
+                                <td class="py-2 text-slate-300">@s.Stage</td>
+                                <td class="py-2 text-right">@s.Amount.ToString("N2") @s.Currency</td>
+                                <td class="py-2 text-right text-rose-300">@s.DaysInStage</td>
+                                <td class="py-2 text-right text-slate-400">@(s.SlaHours?.ToString() ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>

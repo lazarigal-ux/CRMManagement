@@ -1,0 +1,247 @@
+@page "{token:guid?}"
+@model CRMManagement.Web.Pages.Portal.Quotes.IndexModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Quote";
+}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" />
+    <style>
+        body { background: #f4f7fb; color: #1f2937; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+        .card { background: #fff; border-radius: 1rem; box-shadow: 0 4px 24px rgba(15,23,42,.08); }
+        .accent { color: #0070b8; }
+        .btn-primary { background: #0070b8; color: #fff; }
+        .btn-primary:hover { background: #005f99; }
+        .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+        .signature-pad { width: 100%; height: 140px; border: 1px dashed #cbd5e1; border-radius: .75rem; touch-action: none; background: #fbfdff; }
+    </style>
+</head>
+<body>
+<div class="max-w-4xl mx-auto py-10 px-4">
+    @if (Model.TokenInvalid || Model.Quote is null)
+    {
+        <div class="card p-8 text-center">
+            <h1 class="text-2xl font-semibold mb-2">Quote not found</h1>
+            <p class="text-slate-500">The link is invalid or has expired. Please contact the sender for a fresh link.</p>
+        </div>
+    }
+    else
+    {
+        var q = Model.Quote;
+        var alreadyAccepted = q.AcceptedAt is not null;
+
+        <div class="mb-6 flex items-center justify-between">
+            <h1 class="text-2xl font-semibold">@q.Name</h1>
+            <span class="text-sm text-slate-500">#@q.QuoteNumber</span>
+        </div>
+
+        <div class="card p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div><div class="text-slate-500">Status</div><div class="font-medium">@q.Status</div></div>
+                <div><div class="text-slate-500">Currency</div><div class="font-medium">@q.Currency</div></div>
+                @if (!string.IsNullOrEmpty(q.AccountName))
+                {
+                    <div><div class="text-slate-500">Customer</div><div class="font-medium">@q.AccountName</div></div>
+                }
+                @if (q.ExpiresAt is not null)
+                {
+                    <div><div class="text-slate-500">Expires</div><div class="font-medium">@q.ExpiresAt.Value.ToString("yyyy-MM-dd")</div></div>
+                }
+            </div>
+            @if (!string.IsNullOrEmpty(q.Notes))
+            {
+                <div class="mt-4 text-sm text-slate-600 whitespace-pre-wrap">@q.Notes</div>
+            }
+        </div>
+
+        <div class="card p-0 mb-6 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+                        <tr>
+                            <th class="text-left px-4 py-3">Description</th>
+                            <th class="text-right px-4 py-3">Qty</th>
+                            <th class="text-right px-4 py-3">Unit price</th>
+                            <th class="text-right px-4 py-3">Line total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        @foreach (var l in q.Lines)
+                        {
+                            <tr>
+                                <td class="px-4 py-3">@l.Description</td>
+                                <td class="px-4 py-3 text-right">@l.Quantity.ToString("N2")</td>
+                                <td class="px-4 py-3 text-right">@l.UnitPrice.ToString("N2")</td>
+                                <td class="px-4 py-3 text-right font-medium">@l.LineTotal.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="bg-slate-50 text-sm">
+                        <tr><td colspan="3" class="text-right px-4 py-2 text-slate-500">Subtotal</td>
+                            <td class="text-right px-4 py-2">@q.Subtotal.ToString("N2")</td></tr>
+                        @if (q.Discount > 0)
+                        {
+                            <tr><td colspan="3" class="text-right px-4 py-2 text-slate-500">Discount</td>
+                                <td class="text-right px-4 py-2">-@q.Discount.ToString("N2")</td></tr>
+                        }
+                        @if (q.Tax > 0)
+                        {
+                            <tr><td colspan="3" class="text-right px-4 py-2 text-slate-500">Tax</td>
+                                <td class="text-right px-4 py-2">@q.Tax.ToString("N2")</td></tr>
+                        }
+                        <tr><td colspan="3" class="text-right px-4 py-3 font-semibold">Total</td>
+                            <td class="text-right px-4 py-3 font-semibold accent text-lg">@q.Total.ToString("N2") @q.Currency</td></tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        @if (alreadyAccepted)
+        {
+            <div class="card p-6 text-center">
+                <div class="text-emerald-600 text-2xl mb-1">✓ Accepted</div>
+                <p class="text-sm text-slate-600">
+                    Accepted on @q.AcceptedAt!.Value.ToString("yyyy-MM-dd HH:mm 'UTC'") @if (!string.IsNullOrEmpty(q.AcceptedByName)) { <span> by <span class="font-medium">@q.AcceptedByName</span></span> }.
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="card p-6" id="acceptCard" data-token="@Model.Token">
+                <h2 class="text-lg font-semibold mb-4">Accept this quote</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <label class="block text-sm">
+                        <span class="text-slate-600">Your name <span class="text-rose-500">*</span></span>
+                        <input id="acceptName" type="text" required class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
+                    </label>
+                    <label class="block text-sm">
+                        <span class="text-slate-600">Email (optional)</span>
+                        <input id="acceptEmail" type="email" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
+                    </label>
+                </div>
+
+                <div class="mb-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-slate-600">Sign with finger or mouse (optional)</span>
+                        <button type="button" id="clearSig" class="text-xs text-slate-500 underline">clear</button>
+                    </div>
+                    <canvas id="sigPad" class="signature-pad mt-1"></canvas>
+                </div>
+
+                <p class="text-xs text-slate-500 mb-4">
+                    By clicking <strong>I accept this quote</strong> you confirm the totals and terms above and authorize the sender to proceed.
+                </p>
+
+                <button type="button" id="acceptBtn" class="btn-primary px-5 py-2 rounded-xl text-sm font-medium">I accept this quote</button>
+                <span id="acceptStatus" class="ml-3 text-sm text-slate-500 hidden"></span>
+                <div id="acceptError" class="mt-3 text-sm text-rose-600 hidden"></div>
+                <div id="acceptDone" class="hidden mt-3 text-emerald-600 text-sm">✓ Acceptance recorded.</div>
+            </div>
+
+<script>
+(function () {
+    var card = document.getElementById('acceptCard');
+    if (!card) return;
+    var token = card.dataset.token;
+    var canvas = document.getElementById('sigPad');
+    var clearBtn = document.getElementById('clearSig');
+    var nameEl = document.getElementById('acceptName');
+    var emailEl = document.getElementById('acceptEmail');
+    var btn = document.getElementById('acceptBtn');
+    var status = document.getElementById('acceptStatus');
+    var err = document.getElementById('acceptError');
+    var done = document.getElementById('acceptDone');
+
+    // Resize the canvas crisply for retina screens.
+    function resizeCanvas() {
+        var ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        var ctx = canvas.getContext('2d');
+        ctx.scale(ratio, ratio);
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#0f172a';
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    var drawing = false, last = null, hasSig = false;
+    function pos(e) {
+        var rect = canvas.getBoundingClientRect();
+        if (e.touches && e.touches[0]) {
+            return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+        }
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+    function start(e) { e.preventDefault(); drawing = true; last = pos(e); hasSig = true; }
+    function move(e)  { if (!drawing) return; e.preventDefault();
+        var p = pos(e); var ctx = canvas.getContext('2d');
+        ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+        last = p;
+    }
+    function end()    { drawing = false; last = null; }
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    canvas.addEventListener('mouseup', end);
+    canvas.addEventListener('mouseleave', end);
+    canvas.addEventListener('touchstart', start);
+    canvas.addEventListener('touchmove', move);
+    canvas.addEventListener('touchend', end);
+
+    clearBtn.addEventListener('click', function () {
+        var ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        hasSig = false;
+    });
+
+    btn.addEventListener('click', function () {
+        if (!nameEl.value.trim()) { showErr('Please enter your name.'); nameEl.focus(); return; }
+        err.classList.add('hidden');
+        btn.disabled = true;
+        status.textContent = 'Recording acceptance…';
+        status.classList.remove('hidden');
+
+        var sigSvg = hasSig ? canvas.toDataURL('image/png') : null;
+
+        fetch('/api/portal/quotes/' + token + '/accept', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                acceptedByName: nameEl.value.trim(),
+                acceptedByEmail: emailEl.value.trim() || null,
+                signatureSvg: sigSvg
+            })
+        }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+          .then(function (res) {
+              status.classList.add('hidden');
+              btn.disabled = false;
+              if (!res.ok || !res.body.success) {
+                  showErr((res.body && res.body.errorMessage) || 'Could not record acceptance.');
+                  return;
+              }
+              done.classList.remove('hidden');
+              btn.disabled = true;
+              setTimeout(function () { window.location.reload(); }, 1200);
+          }).catch(function () {
+              status.classList.add('hidden');
+              btn.disabled = false;
+              showErr('Network error. Please try again.');
+          });
+    });
+
+    function showErr(m) { err.textContent = m; err.classList.remove('hidden'); }
+})();
+</script>
+        }
+    }
+</div>
+</body>
+</html>

@@ -1,0 +1,56 @@
+namespace CRMManagement.Application.DTOs;
+
+public sealed record ZohoConnectionDto(
+    Guid Id,
+    string Region,
+    string ClientId,
+    bool HasClientSecret,
+    bool HasRefreshToken,
+    string? AccountOwnerEmail,
+    string? AccountOwnerName,
+    DateTime? ConnectedAt,
+    DateTime? DisconnectedAt,
+    DateTime? LastImportAt,
+    string Status,
+    string? LastError);
+
+public sealed record ZohoImportRequest(
+    bool Leads,
+    bool Contacts,
+    bool Accounts,
+    bool Deals,
+    bool Products,
+    bool Quotes,
+    bool Activities,
+    bool Campaigns,
+    bool Tickets,
+    bool Invoices,
+    bool Orders,
+    bool Notes,
+    bool Vendors,
+    bool PurchaseOrders,
+    bool Solutions);
+
+public sealed record ZohoImportJobDto(
+    Guid Id,
+    DateTime StartedAt,
+    DateTime? CompletedAt,
+    string Status,
+    string Modules,
+    int LeadsInserted,          int LeadsUpdated,          int LeadsSkipped,          int LeadsErrored,
+    int ContactsInserted,       int ContactsUpdated,       int ContactsSkipped,       int ContactsErrored,
+    int AccountsInserted,       int AccountsUpdated,       int AccountsSkipped,       int AccountsErrored,
+    int DealsInserted,          int DealsUpdated,          int DealsSkipped,          int DealsErrored,
+    int ProductsInserted,       int ProductsUpdated,       int ProductsSkipped,       int ProductsErrored,
+    int QuotesInserted,         int QuotesUpdated,         int QuotesSkipped,         int QuotesErrored,
+    int ActivitiesInserted,     int ActivitiesUpdated,     int ActivitiesSkipped,     int ActivitiesErrored,
+    int CampaignsInserted,      int CampaignsUpdated,      int CampaignsSkipped,      int CampaignsErrored,
+    int TicketsInserted,        int TicketsUpdated,        int TicketsSkipped,        int TicketsErrored,
+    int InvoicesInserted,       int InvoicesUpdated,       int InvoicesSkipped,       int InvoicesErrored,
+    int OrdersInserted,         int OrdersUpdated,         int OrdersSkipped,         int OrdersErrored,
+    int NotesInserted,          int NotesUpdated,          int NotesSkipped,          int NotesErrored,
+    int VendorsInserted,        int VendorsUpdated,        int VendorsSkipped,        int VendorsErrored,
+    int PurchaseOrdersInserted, int PurchaseOrdersUpdated, int PurchaseOrdersSkipped, int PurchaseOrdersErrored,
+    int SolutionsInserted,      int SolutionsUpdated,      int SolutionsSkipped,      int SolutionsErrored,
+    string? ErrorsJson,
+    string? Message);

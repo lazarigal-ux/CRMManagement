@@ -1,0 +1,41 @@
+@page "{id:guid}"
+@model CRMManagement.Web.Pages.Solutions.DetailsModel
+@{
+    ViewData["Title"] = Model.Item?.Title ?? "Solution";
+    var s = Model.Item!;
+}
+
+<section class="p-4 space-y-4 text-slate-200 max-w-4xl">
+    <div class="flex items-center justify-between">
+        <div>
+            <a asp-page="/Solutions/Index" class="text-xs text-slate-400 hover:underline"><i class="fa-solid fa-arrow-left text-[10px]"></i> Back to Solutions</a>
+            <h1 class="text-2xl font-semibold text-slate-100 mt-1"><span class="font-mono text-slate-300">@s.SolutionNumber</span> · @s.Title</h1>
+            <p class="text-xs text-slate-400 mt-1">@s.Category · Status: @s.Status · Published: @(s.Published ? "Yes" : "No")</p>
+        </div>
+        <div class="flex gap-2">
+            <a asp-page="/Solutions/Upsert" asp-route-id="@s.Id" class="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-sm">Edit</a>
+            <form method="post" asp-page-handler="Delete" asp-route-id="@s.Id" onsubmit="return confirm('Delete this solution?');">
+                <button class="px-3 py-1.5 rounded-xl bg-rose-700 hover:bg-rose-600 text-white text-sm">Delete</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 space-y-4 text-sm">
+        <div>
+            <div class="text-xs text-slate-400 mb-1">Question</div>
+            <div class="whitespace-pre-line">@(s.Question ?? "—")</div>
+        </div>
+        <div>
+            <div class="text-xs text-slate-400 mb-1">Answer</div>
+            <div class="whitespace-pre-line">@(s.Answer ?? "—")</div>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(s.Comments))
+        {
+            <div>
+                <div class="text-xs text-slate-400 mb-1">Comments</div>
+                <div class="whitespace-pre-line">@s.Comments</div>
+            </div>
+        }
+    </div>
+    <partial name="_CustomFields" model='(EntityType: "Solution", EntityId: Model.Item!.Id)' />
+</section>

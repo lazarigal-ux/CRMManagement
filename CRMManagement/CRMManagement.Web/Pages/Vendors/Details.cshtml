@@ -1,0 +1,34 @@
+@page "{id:guid}"
+@model CRMManagement.Web.Pages.Vendors.DetailsModel
+@{
+    ViewData["Title"] = Model.Item?.Name ?? "Vendor";
+    var v = Model.Item!;
+}
+
+<section class="p-4 space-y-4 text-slate-200 max-w-4xl">
+    <div class="flex items-center justify-between">
+        <div>
+            <a asp-page="/Vendors/Index" class="text-xs text-slate-400 hover:underline"><i class="fa-solid fa-arrow-left text-[10px]"></i> Back to Vendors</a>
+            <h1 class="text-2xl font-semibold text-slate-100 mt-1">@v.Name</h1>
+            @if (!string.IsNullOrEmpty(v.Category))
+            { <p class="text-xs text-slate-400 mt-1">@v.Category</p> }
+        </div>
+        <div class="flex gap-2">
+            <a asp-page="/Vendors/Upsert" asp-route-id="@v.Id" class="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-sm">Edit</a>
+            <form method="post" asp-page-handler="Delete" asp-route-id="@v.Id" onsubmit="return confirm('Delete this vendor?');">
+                <button class="px-3 py-1.5 rounded-xl bg-rose-700 hover:bg-rose-600 text-white text-sm">Delete</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div><div class="text-xs text-slate-400">Email</div><div>@(v.Email ?? "—")</div></div>
+        <div><div class="text-xs text-slate-400">Phone</div><div>@(v.Phone ?? "—")</div></div>
+        <div><div class="text-xs text-slate-400">Website</div><div>@(v.Website ?? "—")</div></div>
+        <div><div class="text-xs text-slate-400">GL Account</div><div>@(v.GlAccount ?? "—")</div></div>
+        <div class="md:col-span-2"><div class="text-xs text-slate-400">Address</div><div class="whitespace-pre-line">@($"{v.Street}\n{v.City}, {v.State} {v.ZipCode}\n{v.Country}".Trim())</div></div>
+        <div class="md:col-span-2"><div class="text-xs text-slate-400">Description</div><div class="whitespace-pre-line">@(v.Description ?? "—")</div></div>
+        <div><div class="text-xs text-slate-400">Active</div><div>@(v.IsActive ? "Yes" : "No")</div></div>
+    </div>
+    <partial name="_CustomFields" model='(EntityType: "Vendor", EntityId: Model.Item!.Id)' />
+</section>

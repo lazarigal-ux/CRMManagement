@@ -1,0 +1,33 @@
+@model IReadOnlyList<CRMManagement.Application.DTOs.PipelineStageTotalDto>
+@{
+    var palette = new[] { "#10b981", "#3b82f6", "#ef4444", "#f59e0b", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16" };
+    var max = Model.Count == 0 ? 0 : Model.Max(s => s.Count);
+}
+<div class="crm-dash-panel space-y-3">
+    <div class="flex items-center justify-between gap-3">
+        <div>
+            <h3>My Pipeline Deals By Stage</h3>
+            <div class="mt-1 text-xs" style="color:light-dark(#687078, #94a3b8)">Open deals grouped by pipeline stage.</div>
+        </div>
+        <i class="fa-solid fa-filter-circle-dollar text-sm" style="color:light-dark(#0073bb, #60a5fa)"></i>
+    </div>
+    @if (Model.Count == 0 || max == 0)
+    {
+        <div class="text-sm" style="color:light-dark(#687078, #94a3b8)">No open deals to chart.</div>
+    }
+    else
+    {
+        <div class="crm-dash-funnel">
+            @for (int i = 0; i < Model.Count; i++)
+            {
+                var s = Model[i];
+                var width = Math.Max(20m, Math.Round((decimal)s.Count / max * 100m, 1));
+                var color = palette[i % palette.Length];
+                <div class="crm-dash-funnel-row"
+                     style="width:@(width.ToString(System.Globalization.CultureInfo.InvariantCulture))%;background:@color">
+                    <span class="label">@s.StageName : @s.Count</span>
+                </div>
+            }
+        </div>
+    }
+</div>

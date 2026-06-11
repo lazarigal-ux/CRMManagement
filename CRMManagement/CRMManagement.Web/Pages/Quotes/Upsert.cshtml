@@ -1,0 +1,184 @@
+@page "{id:guid?}"
+@model CRMManagement.Web.Pages.Quotes.UpsertModel
+@{
+    var isNew = Model.Input.Id is null;
+    ViewData["Title"] = isNew ? "New Quote" : "Edit Quote";
+}
+
+<style>
+    .cred-form-input{background:light-dark(#ffffff,rgba(15,23,42,.4));border-color:light-dark(#aab7b8,rgba(100,116,139,.5));color:light-dark(#16191f,#f1f5f9)}
+    .cred-form-input::placeholder{color:light-dark(#687078,rgba(148,163,184,.65))}
+    .cred-form-input:focus{outline:none;border-color:#0ea5e9;box-shadow:0 0 0 2px rgba(14,165,233,.25)}
+    .cred-form-label{color:light-dark(#545b64,#94a3b8)}
+    .comm-section-title{display:flex;align-items:center;gap:.5rem;font-size:.8125rem;line-height:1.25rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:light-dark(#16191f,rgb(203 213 225))}
+    .comm-section-title i{color:light-dark(#0073bb,rgb(59 130 246));font-size:.875rem}
+    .vm-action-btn{border-color:light-dark(#c5ccd3,rgba(71,85,105,.5));color:light-dark(#16191f,#f1f5f9)}
+    html[data-theme="gray"] .cred-form-card{background:rgb(51,65,85)!important;border-color:rgba(71,85,105,.55)!important;box-shadow:0 2px 8px rgba(0,0,0,.35)!important}
+    html[data-theme="gray"] .cred-form-input{background:rgba(15,23,42,.4)!important;border-color:rgba(100,116,139,.5)!important}
+    html[data-theme="gray"] .vm-action-btn{border-color:rgba(100,116,139,.6)!important;color:#f1f5f9!important}
+    html[data-theme="black"] .cred-form-card{background:rgb(22,22,22)!important;border-color:rgba(255,255,255,.08)!important;box-shadow:0 2px 12px rgba(0,0,0,.6)!important}
+    html[data-theme="black"] .cred-form-input{background:rgba(0,0,0,.4)!important;border-color:rgba(255,255,255,.10)!important}
+    html[data-theme="black"] .vm-action-btn{border-color:rgba(255,255,255,.12)!important;color:#f1f5f9!important}
+    html[data-theme="light"] .cred-form-card{background:#ffffff!important;border-color:#d5dbdb!important;box-shadow:0 1px 4px rgba(0,0,0,.1)!important}
+    html[data-theme="light"] .cred-form-input{background:#ffffff!important;border-color:#aab7b8!important;color:#16191f!important}
+    html[data-theme="light"] .cred-form-label{color:#545b64!important}
+    @@media(max-width:767px){#quote-form-root .grid{grid-template-columns:1fr!important;gap:.65rem!important}#quote-form-root .grid>[style*="grid-column"]{grid-column:auto!important}}
+</style>
+
+<section id="quote-form-root" class="w-full" style="padding-left:0;padding-right:0;padding-bottom:2rem;margin-top:.5rem;">
+    <div class="cred-form-card w-full rounded-2xl border overflow-hidden">
+        <form method="post">
+        <input type="hidden" asp-for="Input.Id" />
+        <div class="flex flex-col gap-2 py-2">
+            <div class="px-4 flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                <div>
+                    <h2 class="comm-section-title"><i class="fa-solid fa-file-invoice-dollar"></i><span>@ViewData["Title"]</span></h2>
+                    <div class="text-sm mt-0.5" style="color:light-dark(#545b64,#94a3b8)">@(isNew ? "Create a new quote with pricing and line items." : "Edit quote details and pricing.")</div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 shrink-0">
+                    <button type="submit" class="inline-flex items-center gap-2 rounded-full bg-sky-600 hover:bg-sky-500 px-3 py-1.5 text-sm text-white transition font-medium"><i class="fas fa-save text-xs"></i> Save</button>
+                    @if (!isNew)
+                    {
+                        <button type="button"
+                                id="btn-portal-link"
+                                data-quote-id="@Model.Input.Id"
+                                class="inline-flex items-center gap-2 rounded-full bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-sm text-white transition font-medium"
+                                title="Generate a public acceptance link for this quote">
+                            <i class="fa-solid fa-paper-plane text-xs"></i><span>Send for acceptance</span>
+                        </button>
+                    }
+                    <a asp-page="/Quotes/Index" class="vm-action-btn inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm hover:opacity-80 transition" title="Back to quotes"><i class="fa-solid fa-arrow-left text-xs"></i><span>Back</span></a>
+                </div>
+            </div>
+            <div class="border-t" style="border-color:light-dark(#d5dbdb,rgba(255,255,255,.08))!important;"></div>
+            <div class="px-4 py-3">
+                <div asp-validation-summary="ModelOnly" class="text-red-400 text-sm mb-2"></div>
+                <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;">
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.QuoteNumber" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-hashtag text-xs"></i><span>Quote Number</span></span></label>
+                        <input asp-for="Input.QuoteNumber" placeholder="Q-001" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.Name" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-tag text-xs"></i><span>Name</span><span class="text-red-500">*</span></span></label>
+                        <input asp-for="Input.Name" required placeholder="Enterprise Quote" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                        <span asp-validation-for="Input.Name" class="text-red-400 text-xs"></span>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.AccountId" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-building text-xs"></i><span>Account</span></span></label>
+                        <input asp-for="Input.AccountId" placeholder="Account ID" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.OpportunityId" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-handshake text-xs"></i><span>Opportunity</span></span></label>
+                        <input asp-for="Input.OpportunityId" placeholder="Opportunity ID" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.Status" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-circle-info text-xs"></i><span>Status</span></span></label>
+                        <input asp-for="Input.Status" placeholder="Draft" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.ExpiresAt" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-calendar-xmark text-xs"></i><span>Expires</span></span></label>
+                        <input asp-for="Input.ExpiresAt" type="date" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.Subtotal" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-calculator text-xs"></i><span>Subtotal</span></span></label>
+                        <input asp-for="Input.Subtotal" type="number" step="0.01" placeholder="0.00" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.Discount" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-percent text-xs"></i><span>Discount</span></span></label>
+                        <input asp-for="Input.Discount" type="number" step="0.01" placeholder="0.00" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.Tax" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-receipt text-xs"></i><span>Tax</span></span></label>
+                        <input asp-for="Input.Tax" type="number" step="0.01" placeholder="0.00" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.Total" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-dollar-sign text-xs"></i><span>Total</span></span></label>
+                        <input asp-for="Input.Total" type="number" step="0.01" placeholder="0.00" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.Currency" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-coins text-xs"></i><span>Currency</span></span></label>
+                        <input asp-for="Input.Currency" placeholder="USD" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                    </div>
+                    <div class="space-y-1.5" style="grid-column:1/-1;">
+                        <label asp-for="Input.Notes" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-align-left text-xs"></i><span>Notes</span></span></label>
+                        <textarea asp-for="Input.Notes" rows="2" placeholder="Additional notes about this quote..." class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </form>
+    </div>
+
+    @if (Model.Existing is not null)
+    {
+        <div class="cred-form-card w-full rounded-2xl border overflow-hidden mt-3">
+            <div class="px-4 py-3" style="border-bottom:1px solid light-dark(#d5dbdb,rgba(255,255,255,.08))">
+                <h2 class="comm-section-title"><i class="fa-solid fa-list-ol"></i><span>Lines</span></h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm" style="color:light-dark(#16191f,#f1f5f9)">
+                    <thead>
+                        <tr style="background:light-dark(#f7f8f8,rgba(30,41,59,.8))" class="text-[11px] uppercase tracking-wide">
+                            <th class="px-4 py-3 text-left">Product</th>
+                            <th class="px-4 py-3 text-left">Description</th>
+                            <th class="px-4 py-3 text-left">Qty</th>
+                            <th class="px-4 py-3 text-left">Unit Price</th>
+                            <th class="px-4 py-3 text-left">Discount</th>
+                            <th class="px-4 py-3 text-left">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var line in Model.Existing.Lines)
+                    {
+                        <tr style="border-top:1px solid light-dark(#e5e7eb,rgba(71,85,105,.5))">
+                            <td class="px-4 py-3 text-xs">@line.ProductId</td>
+                            <td class="px-4 py-3 text-xs">@line.Description</td>
+                            <td class="px-4 py-3 text-xs">@line.Quantity</td>
+                            <td class="px-4 py-3 text-xs">@line.UnitPrice.ToString("N2")</td>
+                            <td class="px-4 py-3 text-xs">@line.Discount.ToString("N2")</td>
+                            <td class="px-4 py-3 text-xs font-semibold">@line.LineTotal.ToString("N2")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-4 py-3" style="border-top:1px solid light-dark(#d5dbdb,rgba(255,255,255,.08))">
+                <form method="post" asp-page-handler="AddLine" asp-route-id="@Model.Existing.Id" class="grid" style="grid-template-columns:repeat(6,minmax(0,1fr));gap:.5rem;">
+                    <input asp-for="NewLine.ProductId" placeholder="Product Id" class="cred-form-input rounded-lg border px-3 py-2 text-sm" />
+                    <input asp-for="NewLine.Description" placeholder="Description" class="cred-form-input rounded-lg border px-3 py-2 text-sm" />
+                    <input asp-for="NewLine.Quantity" type="number" step="0.01" placeholder="Qty" class="cred-form-input rounded-lg border px-3 py-2 text-sm" />
+                    <input asp-for="NewLine.UnitPrice" type="number" step="0.01" placeholder="Price" class="cred-form-input rounded-lg border px-3 py-2 text-sm" />
+                    <input asp-for="NewLine.Discount" type="number" step="0.01" placeholder="Discount" class="cred-form-input rounded-lg border px-3 py-2 text-sm" />
+                    <button class="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 hover:bg-sky-500 px-3 py-2 text-sm text-white transition font-medium"><i class="fa-solid fa-plus text-xs"></i> Add line</button>
+                </form>
+            </div>
+        </div>
+    }
+</section>
+
+<script>
+(function () {
+    var btn = document.getElementById('btn-portal-link');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+        var id = btn.dataset.quoteId;
+        if (!id) return;
+        btn.disabled = true;
+        var originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i><span>Generating…</span>';
+
+        fetch('/api/quotes/' + id + '/portal-token', { method: 'POST' })
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(r); })
+            .then(function (j) {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                window.prompt('Acceptance link — copy and send to the customer:', j.url);
+            })
+            .catch(function () {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                alert('Could not generate link. Save the quote first, then try again.');
+            });
+    });
+})();
+</script>

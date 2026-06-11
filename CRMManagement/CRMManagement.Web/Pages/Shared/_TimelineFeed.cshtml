@@ -1,0 +1,107 @@
+@*
+    Unified timeline (Phase 2). Pass via ViewData:
+        @{ ViewData["TimelineKind"] = "Opportunity"; ViewData["TimelineId"] = Model.Item!.Id; }
+        <partial name="_TimelineFeed" />
+*@
+@{
+    var tlKind = (ViewData["TimelineKind"] as string) ?? "";
+    var tlId   = ViewData["TimelineId"]?.ToString() ?? "";
+}
+@if (!string.IsNullOrEmpty(tlKind) && !string.IsNullOrEmpty(tlId))
+{
+<section class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4 text-sm text-slate-200 timeline-feed"
+         data-entity-kind="@tlKind" data-entity-id="@tlId">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-300">Timeline</h3>
+        <button type="button" class="timeline-feed__refresh text-xs text-slate-400 hover:text-slate-100">refresh</button>
+    </div>
+    <div class="timeline-feed__list space-y-2 text-xs"></div>
+    <div class="timeline-feed__empty hidden text-xs text-slate-400 italic">No activity yet.</div>
+    <div class="timeline-feed__error hidden text-xs text-rose-300"></div>
+</section>
+
+<script>
+(function () {
+    var roots = document.querySelectorAll('section.timeline-feed:not([data-bound])');
+    roots.forEach(function (root) {
+        root.dataset.bound = '1';
+        var list  = root.querySelector('.timeline-feed__list');
+        var empty = root.querySelector('.timeline-feed__empty');
+        var err   = root.querySelector('.timeline-feed__error');
+        var btn   = root.querySelector('.timeline-feed__refresh');
+        var kind  = root.dataset.entityKind;
+        var id    = root.dataset.entityId;
+
+        function iconFor(kind) {
+            switch (kind) {
+                case 'Email':    return 'fa-envelope';
+                case 'WhatsApp': return 'fa-comment-dots';
+                case 'Note':     return 'fa-note-sticky';
+                case 'Activity': return 'fa-calendar-check';
+                default:         return 'fa-circle';
+            }
+        }
+        function colorFor(kind, dir) {
+            if (kind === 'WhatsApp') return dir === 'in' ? 'text-emerald-300' : 'text-emerald-200';
+            if (kind === 'Email')    return 'text-sky-300';
+            if (kind === 'Note')     return 'text-amber-300';
+            if (kind === 'Activity') return 'text-slate-300';
+            return 'text-slate-400';
+        }
+        function fmtDate(iso) {
+            try {
+                var d = new Date(iso);
+                return d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+            } catch (_) { return iso; }
+        }
+        function escape(s) {
+            return (s || '').replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
+        function load() {
+            list.innerHTML = '';
+            empty.classList.add('hidden');
+            err.classList.add('hidden');
+
+            fetch('/api/timeline?entityKind=' + encodeURIComponent(kind) + '&entityId=' + encodeURIComponent(id) + '&limit=50')
+                .then(function (r) { return r.ok ? r.json() : Promise.reject(r); })
+                .then(function (items) {
+                    if (!items || items.length === 0) {
+                        empty.classList.remove('hidden');
+                        return;
+                    }
+                    var html = items.map(function (it) {
+                        var icon  = iconFor(it.kind);
+                        var color = colorFor(it.kind, it.direction);
+                        var arrow = it.direction === 'in' ? '←' : it.direction === 'out' ? '→' : '';
+                        var title = escape(it.title || it.kind);
+                        var body  = escape(it.body || '');
+                        if (body.length > 240) body = body.substring(0, 240) + '…';
+                        return '' +
+                            '<div class="flex gap-2 items-start py-1.5 border-b border-slate-700/30 last:border-0">' +
+                              '<i class="fa-solid ' + icon + ' ' + color + ' w-4 mt-0.5"></i>' +
+                              '<div class="flex-1 min-w-0">' +
+                                '<div class="flex justify-between gap-2 text-slate-400 text-[11px]">' +
+                                  '<span>' + title + ' ' + arrow + '</span>' +
+                                  '<span>' + fmtDate(it.at) + '</span>' +
+                                '</div>' +
+                                (body ? '<div class="text-slate-200 mt-0.5 whitespace-pre-wrap break-words">' + body + '</div>' : '') +
+                              '</div>' +
+                            '</div>';
+                    }).join('');
+                    list.innerHTML = html;
+                })
+                .catch(function () {
+                    err.textContent = 'Could not load timeline.';
+                    err.classList.remove('hidden');
+                });
+        }
+
+        btn.addEventListener('click', load);
+        load();
+    });
+})();
+</script>
+}

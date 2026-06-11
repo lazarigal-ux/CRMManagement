@@ -1,0 +1,89 @@
+@page "{id:guid?}"
+@model CRMManagement.Web.Pages.Campaigns.UpsertModel
+@{
+    var isNew = Model.Input.Id is null;
+    ViewData["Title"] = isNew ? "New Campaign" : "Edit Campaign";
+}
+
+<style>
+    .cred-form-input{background:light-dark(#ffffff,rgba(15,23,42,.4));border-color:light-dark(#aab7b8,rgba(100,116,139,.5));color:light-dark(#16191f,#f1f5f9)}
+    .cred-form-input::placeholder{color:light-dark(#687078,rgba(148,163,184,.65))}
+    .cred-form-input:focus{outline:none;border-color:#0ea5e9;box-shadow:0 0 0 2px rgba(14,165,233,.25)}
+    .cred-form-label{color:light-dark(#545b64,#94a3b8)}
+    .comm-section-title{display:flex;align-items:center;gap:.5rem;font-size:.8125rem;line-height:1.25rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:light-dark(#16191f,rgb(203 213 225))}
+    .comm-section-title i{color:light-dark(#0073bb,rgb(59 130 246));font-size:.875rem}
+    .vm-action-btn{border-color:light-dark(#c5ccd3,rgba(71,85,105,.5));color:light-dark(#16191f,#f1f5f9)}
+    html[data-theme="gray"] .cred-form-card{background:rgb(51,65,85)!important;border-color:rgba(71,85,105,.55)!important;box-shadow:0 2px 8px rgba(0,0,0,.35)!important}
+    html[data-theme="gray"] .cred-form-input{background:rgba(15,23,42,.4)!important;border-color:rgba(100,116,139,.5)!important}
+    html[data-theme="gray"] .vm-action-btn{border-color:rgba(100,116,139,.6)!important;color:#f1f5f9!important}
+    html[data-theme="black"] .cred-form-card{background:rgb(22,22,22)!important;border-color:rgba(255,255,255,.08)!important;box-shadow:0 2px 12px rgba(0,0,0,.6)!important}
+    html[data-theme="black"] .cred-form-input{background:rgba(0,0,0,.4)!important;border-color:rgba(255,255,255,.10)!important}
+    html[data-theme="black"] .vm-action-btn{border-color:rgba(255,255,255,.12)!important;color:#f1f5f9!important}
+    html[data-theme="light"] .cred-form-card{background:#ffffff!important;border-color:#d5dbdb!important;box-shadow:0 1px 4px rgba(0,0,0,.1)!important}
+    html[data-theme="light"] .cred-form-input{background:#ffffff!important;border-color:#aab7b8!important;color:#16191f!important}
+    html[data-theme="light"] .cred-form-label{color:#545b64!important}
+    @@media(max-width:767px){#camp-form-root .grid{grid-template-columns:1fr!important;gap:.65rem!important}#camp-form-root .grid>[style*="grid-column"]{grid-column:auto!important}}
+</style>
+
+<section id="camp-form-root" class="w-full" style="padding-left:0;padding-right:0;padding-bottom:2rem;margin-top:.5rem;">
+    <div class="cred-form-card w-full rounded-2xl border overflow-hidden">
+        <form method="post">
+        <input type="hidden" asp-for="Input.Id" />
+        <div class="flex flex-col gap-2 py-2">
+            <div class="px-4 flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                <div>
+                    <h2 class="comm-section-title"><i class="fa-solid fa-bullhorn"></i><span>@ViewData["Title"]</span></h2>
+                    <div class="text-sm mt-0.5" style="color:light-dark(#545b64,#94a3b8)">@(isNew ? "Create a new marketing campaign." : "Edit campaign details and budget.")</div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 shrink-0">
+                    <button type="submit" class="inline-flex items-center gap-2 rounded-full bg-sky-600 hover:bg-sky-500 px-3 py-1.5 text-sm text-white transition font-medium"><i class="fas fa-save text-xs"></i> Save</button>
+                    <a asp-page="/Campaigns/Index" class="vm-action-btn inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm hover:opacity-80 transition" title="Back to campaigns"><i class="fa-solid fa-arrow-left text-xs"></i><span>Back</span></a>
+                </div>
+            </div>
+            <div class="border-t" style="border-color:light-dark(#d5dbdb,rgba(255,255,255,.08))!important;"></div>
+            <div class="px-4 py-3">
+                <div asp-validation-summary="ModelOnly" class="text-red-400 text-sm mb-2"></div>
+                <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;">
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.Name" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-bullhorn text-xs"></i><span>Name</span><span class="text-red-500">*</span></span></label>
+                        <input asp-for="Input.Name" required placeholder="Campaign name" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                        <span asp-validation-for="Input.Name" class="text-red-400 text-xs"></span>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.Type" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-list text-xs"></i><span>Type</span></span></label>
+                        <input asp-for="Input.Type" placeholder="Email / Webinar / Social" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.Status" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-circle-info text-xs"></i><span>Status</span></span></label>
+                        <input asp-for="Input.Status" placeholder="Planned" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.StartDate" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-calendar text-xs"></i><span>Start Date</span></span></label>
+                        <input asp-for="Input.StartDate" type="date" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.EndDate" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-calendar-check text-xs"></i><span>End Date</span></span></label>
+                        <input asp-for="Input.EndDate" type="date" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.BudgetedCost" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-wallet text-xs"></i><span>Budgeted Cost</span></span></label>
+                        <input asp-for="Input.BudgetedCost" type="number" step="0.01" placeholder="0.00" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.ActualCost" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-money-bill-wave text-xs"></i><span>Actual Cost</span></span></label>
+                        <input asp-for="Input.ActualCost" type="number" step="0.01" placeholder="0.00" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label asp-for="Input.ExpectedRevenue" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-chart-line text-xs"></i><span>Expected Revenue</span></span></label>
+                        <input asp-for="Input.ExpectedRevenue" type="number" step="0.01" placeholder="0.00" class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm" />
+                    </div>
+                    <div class="space-y-1.5" style="grid-column:1/-1;">
+                        <label asp-for="Input.Description" class="cred-form-label block text-sm font-medium"><span class="inline-flex items-center gap-2"><i class="fa-solid fa-align-left text-xs"></i><span>Description</span></span></label>
+                        <textarea asp-for="Input.Description" rows="3" placeholder="Campaign description..." class="cred-form-input w-full rounded-lg border px-3 py-2 text-sm"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </form>
+    </div>
+</section>

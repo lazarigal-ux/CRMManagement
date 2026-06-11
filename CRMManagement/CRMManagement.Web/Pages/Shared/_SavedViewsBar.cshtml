@@ -1,0 +1,170 @@
+@using CRMManagement.Application.DTOs
+@model CRMManagement.Web.Pages.Shared.SavedViewsBarModel
+
+@{
+    var entityType = Model.EntityType;
+    var mode = string.IsNullOrEmpty(Model.ViewMode) ? "list" : Model.ViewMode;
+    var currentViewId = Model.CurrentViewId;
+    var views = Model.Views;
+}
+
+<style>
+    .svb-shell {
+        display: flex; flex-wrap: wrap; align-items: center; gap: .55rem;
+        padding: .6rem .85rem;
+        border-bottom: 1px solid light-dark(#d5dbdb, rgba(71,85,105,.4));
+    }
+    .svb-mode-toggle {
+        display: inline-flex; border-radius: 999px; overflow: hidden;
+        border: 1px solid light-dark(#aab7b8, rgba(100,116,139,.55));
+        background: light-dark(#ffffff, rgba(30,41,59,.5));
+    }
+    .svb-mode-toggle a {
+        padding: .35rem .75rem;
+        font-size: .72rem; font-weight: 600;
+        color: light-dark(#545b64, #cbd5e1);
+        text-decoration: none;
+        transition: background .15s, color .15s;
+    }
+    .svb-mode-toggle a.active {
+        background: light-dark(#0073bb, #2563eb);
+        color: #fff;
+    }
+    .svb-mode-toggle a:not(.active):hover {
+        background: light-dark(rgba(0,0,0,.04), rgba(255,255,255,.06));
+    }
+    .svb-views-select {
+        padding: .35rem .65rem;
+        border-radius: .65rem;
+        border: 1px solid light-dark(#aab7b8, rgba(100,116,139,.55));
+        background: light-dark(#ffffff, rgba(30,41,59,.5));
+        color: light-dark(#16191f, #f1f5f9);
+        font-size: .75rem;
+        outline: none;
+        min-width: 12rem;
+    }
+    .svb-btn {
+        display: inline-flex; align-items: center; gap: .35rem;
+        padding: .35rem .75rem;
+        border-radius: 999px;
+        border: 1px solid light-dark(#aab7b8, rgba(100,116,139,.55));
+        background: light-dark(#ffffff, rgba(30,41,59,.5));
+        color: light-dark(#16191f, #f1f5f9);
+        font-size: .72rem; font-weight: 600; cursor: pointer;
+        transition: background .15s;
+    }
+    .svb-btn:hover { background: light-dark(#f7f8f8, rgba(255,255,255,.08)); }
+    .svb-btn--danger { color: #dc2626; border-color: rgba(239,68,68,.4); }
+    .svb-label {
+        font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
+        color: light-dark(#687078, #94a3b8);
+    }
+
+    .svb-modal-back {
+        position: fixed; inset: 0; background: rgba(0,0,0,.5);
+        display: none; align-items: center; justify-content: center; z-index: 9999;
+    }
+    .svb-modal-back.open { display: flex; }
+    .svb-modal {
+        background: light-dark(#ffffff, rgb(30,41,59));
+        color: light-dark(#16191f, #f1f5f9);
+        border-radius: 1rem;
+        border: 1px solid light-dark(#d5dbdb, rgba(71,85,105,.6));
+        padding: 1.25rem;
+        width: min(420px, 92vw);
+        box-shadow: 0 20px 60px rgba(0,0,0,.45);
+    }
+    .svb-modal h3 { font-size: .95rem; font-weight: 700; margin-bottom: .9rem; }
+    .svb-modal label { display: block; font-size: .72rem; font-weight: 600; margin: .55rem 0 .25rem; color: light-dark(#545b64,#94a3b8); }
+    .svb-modal input[type=text] {
+        width: 100%;
+        padding: .45rem .65rem;
+        border-radius: .55rem;
+        border: 1px solid light-dark(#aab7b8, rgba(100,116,139,.55));
+        background: light-dark(#ffffff, rgba(15,23,42,.6));
+        color: light-dark(#16191f, #f1f5f9);
+        font-size: .85rem; outline: none;
+    }
+    .svb-modal-footer { display: flex; justify-content: flex-end; gap: .5rem; margin-top: 1rem; }
+</style>
+
+<div class="svb-shell">
+    <span class="svb-label"><i class="fa-solid fa-table-cells-large mr-1"></i>View</span>
+
+    <div class="svb-mode-toggle">
+        <a href="@Url.Page(null, new { mode = "list", view = currentViewId })" class="@(mode == "list" ? "active" : "")" title="List view">
+            <i class="fa-solid fa-list"></i> List
+        </a>
+        <a href="@Url.Page(null, new { mode = "card", view = currentViewId })" class="@(mode == "card" ? "active" : "")" title="Card view">
+            <i class="fa-solid fa-grip"></i> Cards
+        </a>
+    </div>
+
+    <span class="svb-label">Saved</span>
+    <select class="svb-views-select" onchange="if(this.value)window.location.href=this.value;">
+        <option value="@Url.Page(null, new { mode })">— All records —</option>
+        @foreach (var v in views)
+        {
+            var url = Url.Page(null, new { view = v.Id, mode = string.IsNullOrEmpty(v.ViewMode) ? mode : v.ViewMode });
+            var selected = currentViewId == v.Id;
+            <option value="@url" selected="@(selected ? "selected" : null)">@v.Name@(v.IsShared ? " (shared)" : "")@(v.IsDefault ? " ★" : "")</option>
+        }
+    </select>
+
+    <button type="button" class="svb-btn" data-svb-save><i class="fa-solid fa-floppy-disk"></i><span>Save view</span></button>
+
+    @if (currentViewId.HasValue)
+    {
+        <form method="post" asp-page-handler="DeleteView" asp-route-id="@currentViewId" onsubmit="return confirm('Delete this saved view?');" style="display:inline-block;">
+            <button type="submit" class="svb-btn svb-btn--danger"><i class="fa-solid fa-trash-can"></i><span>Delete</span></button>
+        </form>
+    }
+</div>
+
+<div class="svb-modal-back" data-svb-modal>
+    <form method="post" asp-page-handler="SaveView" class="svb-modal">
+        <h3>Save current view</h3>
+        <input type="hidden" name="EntityType" value="@entityType" />
+        <input type="hidden" name="ViewMode" value="@mode" />
+        <input type="hidden" name="FiltersJson" data-svb-filters value="{}" />
+        <label for="svb-name">Name</label>
+        <input id="svb-name" name="Name" type="text" placeholder="e.g. Hot leads, NA contacts" required />
+        <label style="display:flex;align-items:center;gap:.4rem;font-weight:500;text-transform:none;letter-spacing:0;">
+            <input type="checkbox" name="IsShared" value="true" /> Shared with all users
+        </label>
+        <label style="display:flex;align-items:center;gap:.4rem;font-weight:500;text-transform:none;letter-spacing:0;">
+            <input type="checkbox" name="IsDefault" value="true" /> Set as default
+        </label>
+        <div class="svb-modal-footer">
+            <button type="button" class="svb-btn" data-svb-cancel>Cancel</button>
+            <button type="submit" class="svb-btn" style="background:#2563eb;color:#fff;border-color:#2563eb;">Save</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    (function () {
+        var openBtn = document.querySelector('[data-svb-save]');
+        var modal = document.querySelector('[data-svb-modal]');
+        var cancel = document.querySelector('[data-svb-cancel]');
+        var filtersInput = document.querySelector('[data-svb-filters]');
+        if (!openBtn || !modal) return;
+
+        function captureFilters() {
+            var params = new URLSearchParams(window.location.search);
+            var obj = {};
+            params.forEach(function (val, key) {
+                if (key === 'view' || key === 'mode' || key === 'handler') return;
+                obj[key] = val;
+            });
+            if (filtersInput) filtersInput.value = JSON.stringify(obj);
+        }
+
+        openBtn.addEventListener('click', function () {
+            captureFilters();
+            modal.classList.add('open');
+        });
+        cancel.addEventListener('click', function () { modal.classList.remove('open'); });
+        modal.addEventListener('click', function (e) { if (e.target === modal) modal.classList.remove('open'); });
+    })();
+</script>

@@ -1,0 +1,72 @@
+@model IReadOnlyList<CRMManagement.Application.DTOs.DashboardTaskDto>
+<div class="crm-dash-panel space-y-3">
+    <div class="flex items-center justify-between gap-3">
+        <div>
+            <h3>My Open Tasks</h3>
+            <div class="mt-1 text-xs" style="color:light-dark(#687078, #94a3b8)">Tasks assigned to you that aren't completed yet.</div>
+        </div>
+        <i class="fa-solid fa-list-check text-sm" style="color:light-dark(#0073bb, #60a5fa)"></i>
+    </div>
+    @if (Model.Count == 0)
+    {
+        <div class="text-sm" style="color:light-dark(#687078, #94a3b8)">No open tasks.</div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table data-cm-table="home-open-tasks" class="crm-dash-table min-w-full text-sm">
+                <thead style="background-color:light-dark(#dde3ea, rgba(0,0,0,.15))">
+                    <tr style="color:light-dark(#545b64, #94a3b8)">
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="0">Subject</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="1">Due</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="2">Status</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="3">Priority</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="4">Account</th>
+                        @* Extra Zoho fields — default-hidden, surfaced via the "Columns" picker *@
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="5"  data-cm-default-hide="1">Owner</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="6"  data-cm-default-hide="1">Related To</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="7"  data-cm-default-hide="1">Description</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="8"  data-cm-default-hide="1">Activity Type</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="9"  data-cm-default-hide="1">Start</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="10" data-cm-default-hide="1">End</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="11" data-cm-default-hide="1">Location</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="12" data-cm-default-hide="1">Completed</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="13" data-cm-default-hide="1">Created (Zoho)</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="14" data-cm-default-hide="1">Modified (Zoho)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y" style="border-color:light-dark(#d5dbdb, rgba(255,255,255,.06))">
+                    @foreach (var t in Model)
+                    {
+                        var startStr = t.StartAt?.ToString("yyyy-MM-dd HH:mm") ?? "-";
+                        var endStr   = t.EndAt?.ToString("yyyy-MM-dd HH:mm") ?? "-";
+                        var compStr  = t.CompletedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-";
+                        var zCreated = t.ZohoCreatedTime?.ToString("yyyy-MM-dd HH:mm") ?? "-";
+                        var zMod     = t.ZohoModifiedTime?.ToString("yyyy-MM-dd HH:mm") ?? "-";
+                        var descShort = string.IsNullOrWhiteSpace(t.Description)
+                            ? "-"
+                            : (t.Description!.Length > 80 ? t.Description.Substring(0, 80) + "…" : t.Description);
+                        var relShort = string.IsNullOrWhiteSpace(t.RelatedType) ? "-" : t.RelatedType;
+                        <tr>
+                            <td data-label="Subject" class="px-3 py-2" style="color:light-dark(#16191f, #f1f5f9)">@t.Subject</td>
+                            <td data-label="Due" class="px-3 py-2 whitespace-nowrap" style="color:light-dark(#687078, #94a3b8)">@(t.DueDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                            <td data-label="Status" class="px-3 py-2" style="color:light-dark(#545b64, #cbd5e1)">@t.Status</td>
+                            <td data-label="Priority" class="px-3 py-2" style="color:light-dark(#545b64, #cbd5e1)">@(t.Priority ?? "-")</td>
+                            <td data-label="Account" class="px-3 py-2" style="color:light-dark(#545b64, #cbd5e1)">@(t.AccountName ?? "-")</td>
+                            <td data-label="Owner" class="px-3 py-2 whitespace-nowrap" style="color:light-dark(#545b64, #cbd5e1)">@(t.OwnerName ?? "-")</td>
+                            <td data-label="Related To" class="px-3 py-2 whitespace-nowrap" style="color:light-dark(#545b64, #cbd5e1)">@relShort</td>
+                            <td data-label="Description" class="px-3 py-2" style="color:light-dark(#545b64, #cbd5e1)" title="@(t.Description ?? "")">@descShort</td>
+                            <td data-label="Activity Type" class="px-3 py-2 whitespace-nowrap" style="color:light-dark(#545b64, #cbd5e1)">@(t.ActivityType ?? "-")</td>
+                            <td data-label="Start" class="px-3 py-2 whitespace-nowrap" style="color:light-dark(#545b64, #cbd5e1)">@startStr</td>
+                            <td data-label="End" class="px-3 py-2 whitespace-nowrap" style="color:light-dark(#545b64, #cbd5e1)">@endStr</td>
+                            <td data-label="Location" class="px-3 py-2 whitespace-nowrap" style="color:light-dark(#545b64, #cbd5e1)">@(t.Location ?? "-")</td>
+                            <td data-label="Completed" class="px-3 py-2 whitespace-nowrap" style="color:light-dark(#545b64, #cbd5e1)">@compStr</td>
+                            <td data-label="Created (Zoho)" class="px-3 py-2 whitespace-nowrap" style="color:light-dark(#545b64, #cbd5e1)">@zCreated</td>
+                            <td data-label="Modified (Zoho)" class="px-3 py-2 whitespace-nowrap" style="color:light-dark(#545b64, #cbd5e1)">@zMod</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

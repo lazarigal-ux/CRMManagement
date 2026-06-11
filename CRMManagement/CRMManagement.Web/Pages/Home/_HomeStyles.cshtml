@@ -1,0 +1,149 @@
+@* Shared CSS for every Home widget. Loaded once from Index.cshtml; widgets remain modular but share visual tokens. *@
+<style>
+    .crm-dash-page { box-sizing:border-box;max-width:100%;overflow-x:hidden;padding-left:0;padding-right:0; }
+    .app-content:has(.crm-dash-page) { overflow-x:hidden!important;max-width:100vw; }
+    .app-main:has(.crm-dash-page) { padding-left:.5rem!important;padding-right:.5rem!important;overflow-x:hidden!important;max-width:100%; }
+
+    .crm-dash-shell { overflow:hidden;max-width:100%;box-sizing:border-box; }
+    .crm-dash-content { padding:1.5rem;max-width:100%;box-sizing:border-box;display:flex;flex-direction:column;gap:.85rem; }
+
+    .crm-dash-kpi-grid {
+        display:grid;
+        grid-template-columns:repeat(5,minmax(0,1fr));
+        column-gap:.75rem;row-gap:1rem;
+        max-width:100%;box-sizing:border-box;
+    }
+    .crm-dash-kpi-grid > div { width:100%;min-width:0;overflow:hidden; }
+
+    .crm-dash-kpi-card {
+        border-radius:.75rem;
+        border:1px solid light-dark(#adb8c4, rgba(255,255,255,.10));
+        background-color:light-dark(#e8eef5, rgba(255,255,255,.06));
+        padding:1rem 1.1rem;
+        box-shadow:light-dark(0 2px 8px rgba(0,0,0,.08), 0 2px 10px rgba(0,0,0,.25));
+    }
+    .crm-dash-kpi-label {
+        font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; font-weight:600;
+        color:light-dark(#0073bb, #7dd3fc);
+    }
+    .crm-dash-kpi-value {
+        margin-top:.3rem; font-size:1.5rem; font-weight:700; line-height:1.1;
+        color:light-dark(#16191f, #f8fafc);
+    }
+    .crm-dash-kpi-meta {
+        margin-top:.35rem; font-size:.7rem;
+        color:light-dark(#687078, #94a3b8);
+        display:flex; align-items:baseline; gap:.4rem; flex-wrap:wrap;
+    }
+    .crm-dash-delta { font-weight:700; font-size:.72rem; padding:.1rem .35rem; border-radius:.35rem; }
+    .crm-dash-delta.up      { color:#059669; background:rgba(16,185,129,.10); }
+    .crm-dash-delta.down    { color:#dc2626; background:rgba(239,68,68,.10); }
+    .crm-dash-delta.neutral { color:light-dark(#545b64, #94a3b8); background:light-dark(rgba(0,0,0,.04), rgba(255,255,255,.05)); }
+
+    .crm-dash-target-shell {
+        border-radius:1rem;
+        border:1px solid light-dark(#adb8c4, rgba(255,255,255,.06));
+        background-color:light-dark(#e8eef5, rgba(255,255,255,.03));
+        padding:1.1rem 1.25rem;
+        display:flex; flex-direction:column; gap:.6rem;
+    }
+    .crm-dash-target-head { display:flex; align-items:baseline; justify-content:space-between; gap:.75rem; flex-wrap:wrap; }
+    .crm-dash-target-head h3 {
+        font-size:.78rem; font-weight:700; letter-spacing:.18em; text-transform:uppercase;
+        color:light-dark(#545b64, #cbd5e1);
+    }
+    .crm-dash-target-head .nums { font-size:.85rem; color:light-dark(#16191f, #f1f5f9); font-weight:600; }
+    .crm-dash-target-head .nums .of { color:light-dark(#687078, #94a3b8); font-weight:500; }
+    .crm-dash-bar-track {
+        height:18px; border-radius:999px; overflow:hidden;
+        background:light-dark(#e5e7eb, rgba(255,255,255,.08));
+    }
+    .crm-dash-bar-fill {
+        height:100%;
+        background:linear-gradient(90deg, #34d399, #10b981);
+        transition:width .4s ease;
+    }
+    .crm-dash-target-foot {
+        display:flex; justify-content:space-between; align-items:center; font-size:.7rem;
+        color:light-dark(#687078, #94a3b8);
+    }
+
+    .crm-dash-detail-grid {
+        display:grid; grid-template-columns:1fr 1fr; gap:.85rem;
+    }
+    .crm-dash-panel {
+        padding:1.25rem;
+        border-radius:1rem;
+        border:1px solid light-dark(#adb8c4, rgba(255,255,255,.06));
+        background-color:light-dark(#e8eef5, rgba(255,255,255,.03));
+    }
+    .crm-dash-panel h3 {
+        font-size:.78rem; font-weight:700; letter-spacing:.18em; text-transform:uppercase;
+        color:light-dark(#545b64, #cbd5e1);
+    }
+
+    .crm-dash-opp-cards { display:grid; grid-template-columns:1fr; gap:.5rem; }
+
+    /* Funnel chart for "My Pipeline Deals By Stage" */
+    .crm-dash-funnel { display:flex; flex-direction:column; align-items:center; gap:.25rem; padding:.25rem 0; }
+    .crm-dash-funnel-row {
+        position:relative; height:42px; display:flex; align-items:center; justify-content:center;
+        color:#fff; font-weight:600; font-size:.85rem;
+        clip-path: polygon(6% 0, 94% 0, 88% 100%, 12% 100%);
+        transition: width .3s ease;
+    }
+    .crm-dash-funnel-row .label { white-space:nowrap; text-shadow:0 1px 2px rgba(0,0,0,.35); }
+
+    @@media (max-width:1300px) { .crm-dash-kpi-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @@media (max-width:900px) {
+        .crm-dash-detail-grid { grid-template-columns:1fr; }
+    }
+    @@media (max-width:700px) { .crm-dash-kpi-grid { grid-template-columns:1fr; } }
+    @@media (max-width:640px) {
+        .app-main:has(.crm-dash-page) { padding-left:0!important;padding-right:0!important;padding-top:.5rem!important; }
+        .crm-dash-page { padding-left:0!important;padding-right:0!important;margin-top:0; }
+        .crm-dash-shell { border-left:0;border-right:0;border-radius:0; }
+        .crm-dash-shell > div:first-child { padding-left:.9rem;padding-right:.9rem; }
+        .crm-dash-content { padding:.9rem; }
+        .crm-dash-kpi-grid { gap:.75rem; }
+        .crm-dash-panel { padding:.9rem; }
+    }
+
+    html[data-theme="gray"] .crm-dash-kpi-card,
+    html[data-theme="gray"] .crm-dash-panel,
+    html[data-theme="gray"] .crm-dash-target-shell,
+    html[data-theme="gray"] .crm-dash-content > .rounded-2xl {
+        background-color:rgba(255,255,255,.10)!important;
+        border-color:rgba(148,163,184,.45)!important;
+        box-shadow:0 6px 24px -4px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.07)!important;
+    }
+    html[data-theme="light"] .crm-dash-kpi-card,
+    html[data-theme="light"] .crm-dash-panel,
+    html[data-theme="light"] .crm-dash-target-shell,
+    html[data-theme="light"] .crm-dash-content > .rounded-2xl {
+        box-shadow:0 6px 24px -4px rgba(0,0,0,.15), 0 0 0 1px rgba(0,0,0,.06)!important;
+    }
+    html[data-theme="black"] .crm-dash-shell {
+        background:#0a0a0a!important;border-color:rgba(255,255,255,.08)!important;
+        box-shadow:0 2px 8px rgba(0,0,0,.6)!important;color:#e4e4e7!important;
+    }
+    html[data-theme="black"] .crm-dash-kpi-card,
+    html[data-theme="black"] .crm-dash-panel,
+    html[data-theme="black"] .crm-dash-target-shell {
+        background-color:rgba(255,255,255,.02)!important;
+        border-color:rgba(255,255,255,.05)!important;
+        box-shadow:0 6px 24px -4px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04)!important;
+    }
+
+    @@media (max-width:768px) {
+        .crm-dash-table thead { display:none; }
+        .crm-dash-table, .crm-dash-table tbody, .crm-dash-table tr, .crm-dash-table td { display:block; width:100%; box-sizing:border-box; }
+        .crm-dash-table tr { padding:.75rem 1rem; border-bottom:1px solid rgba(82,82,91,.35); }
+        .crm-dash-table td { padding:.2rem 0; white-space:normal!important; }
+        .crm-dash-table td::before {
+            content:attr(data-label);
+            display:block; font-size:.65rem; font-weight:600; text-transform:uppercase; letter-spacing:.12em;
+            color:light-dark(#545b64, #a1a1aa); margin-bottom:.15rem;
+        }
+    }
+</style>

@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "CRMManagement.Web (https)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-crmmanagement-web",
+      "program": "${workspaceFolder}/CRMManagement.Web/bin/Debug/net8.0/CRMManagement.Web.dll",
+      "cwd": "${workspaceFolder}/CRMManagement.Web",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "stopAtEntry": false,
+      "serverReadyAction": {
+        "action": "openExternally",
+        "uriFormat": "https://localhost:7007",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      }
+    }
+  ]
+}

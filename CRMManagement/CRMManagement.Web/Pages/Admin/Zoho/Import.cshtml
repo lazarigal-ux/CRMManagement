@@ -1,0 +1,59 @@
+@page
+@model CRMManagement.Web.Pages.Admin.Zoho.ImportModel
+@{
+    ViewData["Title"] = "Connecting to Zoho";
+}
+
+<section class="p-4 space-y-4 text-slate-200 max-w-2xl">
+    @if (!string.IsNullOrEmpty(Model.ConfigError))
+    {
+        <div class="rounded-2xl border border-amber-700/50 bg-amber-900/30 p-4 text-sm text-amber-100 space-y-2">
+            <strong>Zoho is not configured.</strong>
+            <p>@Model.ConfigError</p>
+            <p class="text-xs text-amber-200/80">
+                Required keys: <code>Zoho:ClientId</code>, <code>Zoho:ClientSecret</code>, <code>Zoho:Region</code> (default <code>com</code>).
+                The redirect URI registered in your Zoho self-client must match <code>@Model.CallbackUrl</code>.
+            </p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(Model.Error))
+    {
+        <div class="rounded-2xl border border-rose-700/50 bg-rose-900/30 p-4 text-sm text-rose-200 space-y-2">
+            <strong>Zoho sign-in failed:</strong>
+            <p>@Model.Error</p>
+            <p class="text-xs">
+                <a href="?" class="text-sky-300 hover:underline">Try again</a>
+            </p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(Model.AuthorizeUrl))
+    {
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4 text-sm text-slate-200 space-y-2">
+            <strong>Sending you to Zoho to sign in…</strong>
+            <p class="text-xs text-slate-400">
+                If your browser doesn't navigate automatically,
+                <a href="@Model.AuthorizeUrl" target="_top" class="text-sky-300 hover:underline">click here to continue</a>.
+            </p>
+        </div>
+
+        @* Break out of any embedding iframe (Brainium wraps /crm in /General/Crm) — accounts.zoho.com refuses to be iframed (X-Frame-Options). *@
+        <script>
+            (function () {
+                var url = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AuthorizeUrl));
+                try {
+                    if (window.top && window.top !== window.self) {
+                        window.top.location.href = url;
+                        return;
+                    }
+                } catch (e) { /* cross-origin top — fall through to top-link below */ }
+                window.location.href = url;
+            })();
+        </script>
+    }
+    else
+    {
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4 text-sm text-slate-200 space-y-2">
+            <strong>Working…</strong>
+        </div>
+    }
+</section>

@@ -1,0 +1,54 @@
+@model IReadOnlyList<CRMManagement.Application.DTOs.OpportunityListItemDto>
+<div class="crm-dash-panel space-y-3">
+    <div class="flex items-center justify-between gap-3">
+        <div>
+            <h3>My Deals Closing This Month</h3>
+            <div class="mt-1 text-xs" style="color:light-dark(#687078, #94a3b8)">Open opportunities with a close date in the current month.</div>
+        </div>
+        <i class="fa-solid fa-calendar-day text-sm" style="color:light-dark(#0073bb, #60a5fa)"></i>
+    </div>
+    @if (Model.Count == 0)
+    {
+        <div class="text-sm" style="color:light-dark(#687078, #94a3b8)">Nothing scheduled to close this month.</div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table data-cm-table="home-closing-this-month" class="crm-dash-table min-w-full text-sm">
+                <thead style="background-color:light-dark(#dde3ea, rgba(0,0,0,.15))">
+                    <tr style="color:light-dark(#545b64, #94a3b8)">
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="0">Deal</th>
+                        <th class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider" data-col-idx="1">Amount</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="2">Closes</th>
+                        @* Extra Zoho fields — default-hidden, surfaced via the "Columns" picker *@
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="3" data-cm-default-hide="1">Account</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="4" data-cm-default-hide="1">Stage</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="5" data-cm-default-hide="1">Probability</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="6" data-cm-default-hide="1">Owner</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="7" data-cm-default-hide="1">Created (Zoho)</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider" data-col-idx="8" data-cm-default-hide="1">Modified (Zoho)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y" style="border-color:light-dark(#d5dbdb, rgba(255,255,255,.06))">
+                    @foreach (var o in Model)
+                    {
+                        var oppProb     = o.Probability.HasValue ? o.Probability.Value + "%" : "-";
+                        var oppZCreated = o.ZohoCreatedTime?.ToString("yyyy-MM-dd HH:mm") ?? "-";
+                        var oppZMod     = o.ZohoModifiedTime?.ToString("yyyy-MM-dd HH:mm") ?? "-";
+                        <tr>
+                            <td data-label="Deal" class="px-3 py-2"><a class="hover:underline" style="color:light-dark(#0073bb, #7dd3fc)" asp-page="/Opportunities/Details" asp-route-id="@o.Id">@o.Name</a></td>
+                            <td data-label="Amount" class="px-3 py-2 text-right whitespace-nowrap" style="color:light-dark(#16191f, #f1f5f9)">@o.Amount.ToString("N2") @o.Currency</td>
+                            <td data-label="Closes" class="px-3 py-2 whitespace-nowrap" style="color:light-dark(#687078, #94a3b8)">@(o.CloseDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                            <td data-label="Account" class="px-3 py-2" style="color:light-dark(#545b64, #cbd5e1)">@(o.AccountName ?? "-")</td>
+                            <td data-label="Stage" class="px-3 py-2" style="color:light-dark(#545b64, #cbd5e1)">@(o.StageName ?? "-")</td>
+                            <td data-label="Probability" class="px-3 py-2" style="color:light-dark(#545b64, #cbd5e1)">@oppProb</td>
+                            <td data-label="Owner" class="px-3 py-2" style="color:light-dark(#545b64, #cbd5e1)">@(o.OwnerName ?? "-")</td>
+                            <td data-label="Created (Zoho)" class="px-3 py-2 whitespace-nowrap" style="color:light-dark(#545b64, #cbd5e1)">@oppZCreated</td>
+                            <td data-label="Modified (Zoho)" class="px-3 py-2 whitespace-nowrap" style="color:light-dark(#545b64, #cbd5e1)">@oppZMod</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
