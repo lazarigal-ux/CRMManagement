@@ -196,6 +196,7 @@ public static class DependencyInjection
 
         // Zoho CRM read-only integration. Region is read per-request from the persisted ZohoConnection
         // row, so the HttpClients here have no BaseAddress and the services build absolute URLs each call.
+        services.AddScoped<IZohoTokenService, ZohoTokenService>();
         services.AddScoped<IZohoConnectionService, ZohoConnectionService>();
         services.AddScoped<IZohoImportService, ZohoImportService>();
         services.AddSingleton<IZohoImportStatusService, ZohoImportStatusService>();
