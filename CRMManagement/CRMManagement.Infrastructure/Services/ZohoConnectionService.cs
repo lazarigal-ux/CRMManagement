@@ -23,17 +23,20 @@ public sealed class ZohoConnectionService : IZohoConnectionService
     private readonly AppDbContext _db;
     private readonly IHttpClientFactory _http;
     private readonly IDataProtector _protector;
+    private readonly ITokenStore _tokens;
     private readonly ILogger<ZohoConnectionService> _logger;
 
     public ZohoConnectionService(
         AppDbContext db,
         IHttpClientFactory http,
         IDataProtectionProvider protectionProvider,
+        ITokenStore tokens,
         ILogger<ZohoConnectionService> logger)
     {
         _db = db;
         _http = http;
         _protector = protectionProvider.CreateProtector(ProtectorPurpose);
+        _tokens = tokens;
         _logger = logger;
     }
 
@@ -160,6 +163,15 @@ public sealed class ZohoConnectionService : IZohoConnectionService
         var accessToken = rootEl.TryGetProperty("access_token", out var atEl) ? atEl.GetString() : null;
         if (!string.IsNullOrEmpty(accessToken))
         {
+            var expiresIn = TimeSpan.FromSeconds(3600);
+            if (rootEl.TryGetProperty("expires_in", out var expEl) && expEl.ValueKind == JsonValueKind.Number)
+            {
+                var raw = expEl.GetInt64();
+                expiresIn = raw > 86400 ? TimeSpan.FromMilliseconds(raw) : TimeSpan.FromSeconds(raw);
+            }
+            await _tokens.SaveAsync(row.Id, ZohoTokenService.AccessTokenType, accessToken,
+                DateTime.UtcNow + expiresIn - TimeSpan.FromMinutes(5), ct);
+
             try
             {
                 var (email, name) = await FetchCurrentUserAsync(row.Region, accessToken!, ct);
@@ -184,6 +196,7 @@ public sealed class ZohoConnectionService : IZohoConnectionService
         row.RefreshTokenProtected = null;
         row.Status = "Disconnected";
         row.DisconnectedAt = DateTime.UtcNow;
+        await _tokens.DeleteAsync(row.Id, ZohoTokenService.AccessTokenType, ct);
         await _db.SaveChangesAsync(ct);
     }
 

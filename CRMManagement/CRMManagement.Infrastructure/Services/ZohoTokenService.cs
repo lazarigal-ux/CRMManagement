@@ -6,7 +6,7 @@ namespace CRMManagement.Infrastructure.Services;
 
 public sealed class ZohoTokenService : IZohoTokenService
 {
-    private const string AccessTokenType = "Zoho:AccessToken";
+    internal const string AccessTokenType = "Zoho:AccessToken";
     private const int SafetyWindowMinutes = 5;
 
     private readonly ITokenStore _tokens;
