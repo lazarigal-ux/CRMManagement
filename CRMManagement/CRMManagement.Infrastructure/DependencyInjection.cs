@@ -11,6 +11,7 @@ using System.IO;
 using CRMManagement.Application.Abstractions;
 using CRMManagement.Infrastructure.Data;
 using CRMManagement.Infrastructure.Identity;
+using CRMManagement.Infrastructure.Repositories;
 using CRMManagement.Infrastructure.Services;
 
 namespace CRMManagement.Infrastructure;
@@ -93,6 +94,7 @@ public static class DependencyInjection
 
         services.AddScoped<DbInitializer>();
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddScoped<ITokenStore, EfTokenStore>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IUserAdminService, UserAdminService>();
         services.AddScoped<ILeadService, LeadService>();
