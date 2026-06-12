@@ -602,3 +602,17 @@ public sealed class ZohoFieldMetadataDto
 }
 
 public sealed record ZohoHealthDto(bool Configured, string Region, bool TokenAcquired, string? Error);
+
+public sealed record ZohoConnectionTestDto(
+    bool Ok,
+    bool ConnectionExists,
+    bool Configured,
+    bool Connected,
+    bool TokenAcquired,
+    bool CrmApiReachable,
+    string Region,
+    DateTime CheckedAtUtc,
+    string? Message,
+    string? Error,
+    int? StatusCode,
+    int? RetryAfterSeconds);

@@ -2,6 +2,7 @@ using CRMManagement.Application.Abstractions;
 using CRMManagement.Application.DTOs;
 using CRMManagement.Infrastructure.Data;
 using CRMManagement.Infrastructure.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -28,6 +29,170 @@ public static class ZohoEndpoints
         // Stays authenticated because it makes a live outbound call (avoid being a Zoho-ping proxy for randoms).
         group.MapGet("/health", async (IZohoCrmReader r, CancellationToken ct) =>
             Results.Ok(await r.HealthAsync(ct))).RequireAuthorization();
+
+        group.MapGet("/test-connection", async (
+            IZohoConnectionService connections,
+            IZohoTokenProvider tokens,
+            IZohoCrmReader reader,
+            CancellationToken ct) =>
+        {
+            var checkedAtUtc = DateTime.UtcNow;
+            var connection = await connections.GetAsync(ct);
+            if (connection is null)
+            {
+                return Results.Ok(new ZohoConnectionTestDto(
+                    Ok: false,
+                    ConnectionExists: false,
+                    Configured: false,
+                    Connected: false,
+                    TokenAcquired: false,
+                    CrmApiReachable: false,
+                    Region: "com",
+                    CheckedAtUtc: checkedAtUtc,
+                    Message: "Zoho connection is not configured.",
+                    Error: null,
+                    StatusCode: null,
+                    RetryAfterSeconds: null));
+            }
+
+            var configured = !string.IsNullOrWhiteSpace(connection.ClientId) && connection.HasClientSecret;
+            if (!configured)
+            {
+                return Results.Ok(new ZohoConnectionTestDto(
+                    Ok: false,
+                    ConnectionExists: true,
+                    Configured: false,
+                    Connected: false,
+                    TokenAcquired: false,
+                    CrmApiReachable: false,
+                    Region: connection.Region,
+                    CheckedAtUtc: checkedAtUtc,
+                    Message: "Zoho app credentials are incomplete.",
+                    Error: null,
+                    StatusCode: null,
+                    RetryAfterSeconds: null));
+            }
+
+            if (!connection.HasRefreshToken)
+            {
+                return Results.Ok(new ZohoConnectionTestDto(
+                    Ok: false,
+                    ConnectionExists: true,
+                    Configured: true,
+                    Connected: false,
+                    TokenAcquired: false,
+                    CrmApiReachable: false,
+                    Region: connection.Region,
+                    CheckedAtUtc: checkedAtUtc,
+                    Message: "Zoho is not connected because no refresh token is stored.",
+                    Error: null,
+                    StatusCode: null,
+                    RetryAfterSeconds: null));
+            }
+
+            try
+            {
+                _ = await tokens.GetAccessTokenAsync(false, ct);
+            }
+            catch (InvalidOperationException)
+            {
+                return Results.Ok(new ZohoConnectionTestDto(
+                    Ok: false,
+                    ConnectionExists: true,
+                    Configured: true,
+                    Connected: true,
+                    TokenAcquired: false,
+                    CrmApiReachable: false,
+                    Region: connection.Region,
+                    CheckedAtUtc: checkedAtUtc,
+                    Message: "Zoho access token could not be acquired.",
+                    Error: "Token acquisition failed.",
+                    StatusCode: null,
+                    RetryAfterSeconds: null));
+            }
+            catch (HttpRequestException)
+            {
+                return Results.Ok(new ZohoConnectionTestDto(
+                    Ok: false,
+                    ConnectionExists: true,
+                    Configured: true,
+                    Connected: true,
+                    TokenAcquired: false,
+                    CrmApiReachable: false,
+                    Region: connection.Region,
+                    CheckedAtUtc: checkedAtUtc,
+                    Message: "Zoho access token could not be acquired.",
+                    Error: "Token acquisition failed.",
+                    StatusCode: null,
+                    RetryAfterSeconds: null));
+            }
+
+            try
+            {
+                var fields = await reader.ListFieldsAsync("Leads", ct);
+                return Results.Ok(new ZohoConnectionTestDto(
+                    Ok: true,
+                    ConnectionExists: true,
+                    Configured: true,
+                    Connected: true,
+                    TokenAcquired: true,
+                    CrmApiReachable: true,
+                    Region: connection.Region,
+                    CheckedAtUtc: checkedAtUtc,
+                    Message: $"Zoho CRM API is reachable. Leads field metadata returned {fields.Count} fields.",
+                    Error: null,
+                    StatusCode: null,
+                    RetryAfterSeconds: null));
+            }
+            catch (ZohoRateLimitException ex)
+            {
+                return Results.Ok(new ZohoConnectionTestDto(
+                    Ok: false,
+                    ConnectionExists: true,
+                    Configured: true,
+                    Connected: true,
+                    TokenAcquired: true,
+                    CrmApiReachable: false,
+                    Region: connection.Region,
+                    CheckedAtUtc: checkedAtUtc,
+                    Message: "Zoho CRM API is rate limiting requests.",
+                    Error: "Rate limited by Zoho CRM API.",
+                    StatusCode: StatusCodes.Status429TooManyRequests,
+                    RetryAfterSeconds: ToRetryAfterSeconds(ex.RetryAfter)));
+            }
+            catch (ZohoApiException ex)
+            {
+                return Results.Ok(new ZohoConnectionTestDto(
+                    Ok: false,
+                    ConnectionExists: true,
+                    Configured: true,
+                    Connected: true,
+                    TokenAcquired: true,
+                    CrmApiReachable: false,
+                    Region: connection.Region,
+                    CheckedAtUtc: checkedAtUtc,
+                    Message: "Zoho CRM API returned an error.",
+                    Error: $"Zoho CRM API returned HTTP {ex.Status}.",
+                    StatusCode: ex.Status,
+                    RetryAfterSeconds: null));
+            }
+            catch (InvalidOperationException)
+            {
+                return Results.Ok(new ZohoConnectionTestDto(
+                    Ok: false,
+                    ConnectionExists: true,
+                    Configured: true,
+                    Connected: true,
+                    TokenAcquired: true,
+                    CrmApiReachable: false,
+                    Region: connection.Region,
+                    CheckedAtUtc: checkedAtUtc,
+                    Message: "Zoho access token was acquired, but the live CRM API test failed before a successful response.",
+                    Error: "Live CRM API test failed.",
+                    StatusCode: null,
+                    RetryAfterSeconds: null));
+            }
+        }).RequireAuthorization(new AuthorizeAttribute { Roles = "Admin,SalesManager" });
 
         // Latest import job summary — tells clients how stale the local mirror is.
         group.MapGet("/sync-status", async (IZohoImportService imports, CancellationToken ct) =>
@@ -153,4 +318,7 @@ public static class ZohoEndpoints
 
     private static (int Page, int PerPage) NormalizePaging(int? page, int? perPage)
         => (Math.Max(1, page ?? 1), Math.Clamp(perPage ?? 50, 1, 200));
+
+    private static int? ToRetryAfterSeconds(TimeSpan? retryAfter) =>
+        retryAfter is null ? null : Math.Max(0, (int)Math.Ceiling(retryAfter.Value.TotalSeconds));
 }
