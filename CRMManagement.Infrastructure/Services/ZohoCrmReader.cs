@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -10,6 +11,9 @@ namespace CRMManagement.Infrastructure.Services;
 public sealed class ZohoCrmReader : IZohoCrmReader
 {
     public const string HttpClientName = "ZohoApi";
+    private const int MaxReadAttempts = 3;
+    private static readonly TimeSpan BaseRetryDelay = TimeSpan.FromMilliseconds(500);
+    private static readonly TimeSpan MaxRetryDelay = TimeSpan.FromSeconds(10);
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -194,46 +198,86 @@ public sealed class ZohoCrmReader : IZohoCrmReader
             throw new InvalidOperationException("Zoho not connected (no refresh token).");
 
         var absolute = new Uri($"https://www.zohoapis.{conn.Region}/{path}");
+        var safePath = SanitizePathForLog(path);
+        var canRetry = method == HttpMethod.Get;
 
         var token = await _tokens.GetAccessTokenAsync(false, ct);
-        var response = await SendWithTokenAsync(method, absolute, token, ct);
-
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        var forceRefreshed = false;
+        for (var attempt = 1; ; attempt++)
         {
-            response.Dispose();
-            token = await _tokens.GetAccessTokenAsync(true, ct);
-            response = await SendWithTokenAsync(method, absolute, token, ct);
-        }
-
-        try
-        {
-            if (response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotFound)
-                return null;
-
-            var body = await response.Content.ReadAsStringAsync(ct);
-
-            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            var started = Stopwatch.GetTimestamp();
+            HttpResponseMessage? response = null;
+            try
             {
-                TimeSpan? retryAfter = response.Headers.RetryAfter?.Delta
-                    ?? (response.Headers.RetryAfter?.Date is DateTimeOffset d
-                        ? d - DateTimeOffset.UtcNow
-                        : null);
-                throw new ZohoRateLimitException(retryAfter, Truncate(body, 1000));
+                response = await SendWithTokenAsync(method, absolute, token, ct);
+
+                if (response.StatusCode == HttpStatusCode.Unauthorized && !forceRefreshed)
+                {
+                    response.Dispose();
+                    response = null;
+                    forceRefreshed = true;
+                    _logger.LogDebug(
+                        "Zoho API {Method} {Path} returned 401 on attempt {Attempt}; refreshing token.",
+                        method.Method, safePath, attempt);
+                    token = await _tokens.GetAccessTokenAsync(true, ct);
+                    response = await SendWithTokenAsync(method, absolute, token, ct);
+                }
+
+                if (response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotFound)
+                {
+                    LogRequestCompleted(method, safePath, response.StatusCode, attempt, started);
+                    return null;
+                }
+
+                var body = await response.Content.ReadAsStringAsync(ct);
+                var retryAfter = GetRetryAfter(response);
+
+                if (canRetry && IsRetryableStatus(response.StatusCode) && attempt < MaxReadAttempts)
+                {
+                    var delay = GetRetryDelay(attempt, retryAfter);
+                    LogRetry(method, safePath, response.StatusCode, attempt, started, delay);
+                    response.Dispose();
+                    response = null;
+                    await Task.Delay(delay, ct);
+                    continue;
+                }
+
+                if (response.StatusCode == HttpStatusCode.TooManyRequests)
+                    throw new ZohoRateLimitException(retryAfter, Truncate(body, 1000));
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning(
+                        "Zoho API {Method} {Path} returned {Status} on attempt {Attempt} after {ElapsedMs}ms: {Body}",
+                        method.Method, safePath, (int)response.StatusCode, attempt, GetElapsedMilliseconds(started), Truncate(body, 1000));
+                    throw new ZohoApiException((int)response.StatusCode, Truncate(body, 2000));
+                }
+
+                LogRequestCompleted(method, safePath, response.StatusCode, attempt, started);
+                return body;
             }
-
-            if (!response.IsSuccessStatusCode)
+            catch (HttpRequestException ex) when (canRetry && attempt < MaxReadAttempts)
             {
+                var delay = GetRetryDelay(attempt, null);
                 _logger.LogWarning(
-                    "Zoho API {Method} {Path} returned {Status}: {Body}",
-                    method, path, (int)response.StatusCode, Truncate(body, 1000));
-                throw new ZohoApiException((int)response.StatusCode, Truncate(body, 2000));
+                    ex,
+                    "Zoho API {Method} {Path} transport error on attempt {Attempt} after {ElapsedMs}ms; retrying in {DelayMs}ms.",
+                    method.Method, safePath, attempt, GetElapsedMilliseconds(started), (int)delay.TotalMilliseconds);
+                await Task.Delay(delay, ct);
             }
-
-            return body;
-        }
-        finally
-        {
-            response.Dispose();
+            catch (TaskCanceledException ex) when (!ct.IsCancellationRequested && canRetry && attempt < MaxReadAttempts)
+            {
+                var delay = GetRetryDelay(attempt, null);
+                _logger.LogWarning(
+                    ex,
+                    "Zoho API {Method} {Path} timed out on attempt {Attempt} after {ElapsedMs}ms; retrying in {DelayMs}ms.",
+                    method.Method, safePath, attempt, GetElapsedMilliseconds(started), (int)delay.TotalMilliseconds);
+                await Task.Delay(delay, ct);
+            }
+            finally
+            {
+                response?.Dispose();
+            }
         }
     }
 
@@ -247,6 +291,49 @@ public sealed class ZohoCrmReader : IZohoCrmReader
 
     private static string Truncate(string? s, int max) =>
         string.IsNullOrEmpty(s) || s!.Length <= max ? s ?? "" : s[..max];
+
+    private static bool IsRetryableStatus(HttpStatusCode status) =>
+        status == HttpStatusCode.TooManyRequests
+        || status == HttpStatusCode.RequestTimeout
+        || (int)status >= 500;
+
+    private static TimeSpan? GetRetryAfter(HttpResponseMessage response) =>
+        response.Headers.RetryAfter?.Delta
+        ?? (response.Headers.RetryAfter?.Date is DateTimeOffset d
+            ? d - DateTimeOffset.UtcNow
+            : null);
+
+    private static TimeSpan GetRetryDelay(int attempt, TimeSpan? retryAfter)
+    {
+        var delay = retryAfter is { } ra && ra > TimeSpan.Zero
+            ? ra
+            : TimeSpan.FromMilliseconds(BaseRetryDelay.TotalMilliseconds * Math.Pow(2, Math.Max(0, attempt - 1)));
+
+        return delay > MaxRetryDelay ? MaxRetryDelay : delay;
+    }
+
+    private static string SanitizePathForLog(string path)
+    {
+        var queryIndex = path.IndexOf('?', StringComparison.Ordinal);
+        return queryIndex < 0 ? path : path[..queryIndex];
+    }
+
+    private static long GetElapsedMilliseconds(long started) =>
+        (long)Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+
+    private void LogRetry(HttpMethod method, string safePath, HttpStatusCode status, int attempt, long started, TimeSpan delay)
+    {
+        _logger.LogWarning(
+            "Zoho API {Method} {Path} returned retryable status {Status} on attempt {Attempt} after {ElapsedMs}ms; retrying in {DelayMs}ms.",
+            method.Method, safePath, (int)status, attempt, GetElapsedMilliseconds(started), (int)delay.TotalMilliseconds);
+    }
+
+    private void LogRequestCompleted(HttpMethod method, string safePath, HttpStatusCode status, int attempt, long started)
+    {
+        _logger.LogDebug(
+            "Zoho API {Method} {Path} completed with status {Status} on attempt {Attempt} in {ElapsedMs}ms.",
+            method.Method, safePath, (int)status, attempt, GetElapsedMilliseconds(started));
+    }
 }
 
 public class ZohoApiException : Exception
