@@ -232,6 +232,14 @@ public sealed class ZohoImportService : IZohoImportService
                 await RunModuleAsync("Solutions",
                     () => ImportSolutionsAsync(db, reader, userManager, ownerCache, cfCtx, job, errors, ct));
 
+            foreach (var ownerEmail in ownerCache
+                         .Where(kvp => kvp.Value is null)
+                         .Select(kvp => kvp.Key)
+                         .OrderBy(email => email, StringComparer.OrdinalIgnoreCase))
+            {
+                errors.Add($"Warning: Zoho owner email '{ownerEmail}' does not match any local CRM user. Imported records for this owner remain unassigned.");
+            }
+
             job.Status = "Succeeded";
             job.CompletedAt = DateTime.UtcNow;
             if (errors.Count > 0)
