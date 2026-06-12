@@ -416,6 +416,7 @@ app.MapZohoApi();
 app.MapZohoImportApi();
 
 var internalZohoImportGate = new SemaphoreSlim(1, 1);
+const int MinInternalAgentKeyLength = 16;
 
 // Internal endpoint for host-side AI agents. Triggers a Zoho import and blocks until the local
 // CRM mirror tables have been refreshed. Mirrors WorkManagement's /api/internal/jira-import/run-and-wait.
@@ -434,15 +435,20 @@ app.MapPost("/api/internal/zoho-import/run-and-wait", async (
         cfg["CRMManagement:InternalApiKey"],
         Environment.GetEnvironmentVariable("AGENT_API_KEY"),
         cfg["AGENT_API_KEY"]
-    }.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+    }.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();
 
     if (string.IsNullOrWhiteSpace(expected))
     {
         return Results.Problem("Internal Zoho import key is not configured.", statusCode: StatusCodes.Status503ServiceUnavailable);
     }
 
+    if (expected.Length < MinInternalAgentKeyLength)
+    {
+        return Results.Problem("Internal Zoho import key is not configured safely.", statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+
     var provided = ctx.Request.Headers["X-Agent-Key"].ToString();
-    if (!string.Equals(provided, expected, StringComparison.Ordinal))
+    if (!AgentKeyMatches(provided, expected))
     {
         return Results.Unauthorized();
     }
@@ -455,11 +461,12 @@ app.MapPost("/api/internal/zoho-import/run-and-wait", async (
     try
     {
         // Default = all modules enabled. Caller can override by posting { "modules": ["leads","contacts",...] }.
-        var enabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        var allowedModules = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "leads","contacts","accounts","deals","products","quotes","activities","campaigns",
             "tickets","invoices","orders","notes","vendors","purchaseorders","solutions"
         };
+        var enabled = new HashSet<string>(allowedModules, StringComparer.OrdinalIgnoreCase);
 
         if ((ctx.Request.ContentLength ?? 0) > 0)
         {
@@ -469,13 +476,45 @@ app.MapPost("/api/internal/zoho-import/run-and-wait", async (
                 if (doc.RootElement.TryGetProperty("modules", out var modsEl) && modsEl.ValueKind == JsonValueKind.Array)
                 {
                     enabled.Clear();
+                    var unknownModules = new List<string>();
+                    var requestedModuleCount = 0;
                     foreach (var m in modsEl.EnumerateArray())
                     {
                         if (m.ValueKind == JsonValueKind.String)
                         {
                             var v = m.GetString();
-                            if (!string.IsNullOrWhiteSpace(v)) enabled.Add(v);
+                            if (string.IsNullOrWhiteSpace(v)) continue;
+
+                            requestedModuleCount++;
+                            var module = v.Trim();
+                            if (allowedModules.Contains(module))
+                            {
+                                enabled.Add(module);
+                            }
+                            else
+                            {
+                                unknownModules.Add(module);
+                            }
                         }
+                    }
+
+                    if (unknownModules.Count > 0)
+                    {
+                        return Results.BadRequest(new
+                        {
+                            ok = false,
+                            message = "Unknown Zoho import module name.",
+                            unknownModules
+                        });
+                    }
+
+                    if (requestedModuleCount == 0)
+                    {
+                        return Results.BadRequest(new
+                        {
+                            ok = false,
+                            message = "At least one module must be specified when modules is provided."
+                        });
                     }
                 }
             }
@@ -523,7 +562,7 @@ app.MapPost("/api/internal/zoho-import/run-and-wait", async (
         catch (Exception ex)
         {
             logger.LogError(ex, "Internal Zoho import failed.");
-            return Results.Problem(ex.Message, statusCode: StatusCodes.Status500InternalServerError);
+            return Results.Problem("Internal Zoho import failed. Check server logs for details.", statusCode: StatusCodes.Status500InternalServerError);
         }
     }
     finally
@@ -1543,6 +1582,18 @@ static bool TryValidateEmbedTokenLegacy(string token, string secret)
 
     return expectedBytes.Length == providedBytes.Length
            && CryptographicOperations.FixedTimeEquals(expectedBytes, providedBytes);
+}
+
+static bool AgentKeyMatches(string? provided, string expected)
+{
+    if (string.IsNullOrWhiteSpace(provided) || string.IsNullOrWhiteSpace(expected))
+        return false;
+
+    var providedBytes = Encoding.UTF8.GetBytes(provided);
+    var expectedBytes = Encoding.UTF8.GetBytes(expected);
+
+    return providedBytes.Length == expectedBytes.Length
+           && CryptographicOperations.FixedTimeEquals(providedBytes, expectedBytes);
 }
 
 app.Run();
