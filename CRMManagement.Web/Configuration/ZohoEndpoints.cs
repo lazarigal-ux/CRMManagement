@@ -18,6 +18,27 @@ namespace CRMManagement.Web.Configuration;
 /// </summary>
 public static class ZohoEndpoints
 {
+    private static readonly HashSet<string> SupportedZohoFieldModules = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Leads",
+        "Contacts",
+        "Accounts",
+        "Deals",
+        "Products",
+        "Quotes",
+        "Tasks",
+        "Calls",
+        "Events",
+        "Campaigns",
+        "Cases",
+        "Invoices",
+        "Sales_Orders",
+        "Notes",
+        "Vendors",
+        "Purchase_Orders",
+        "Solutions",
+    };
+
     public static IEndpointRouteBuilder MapZohoApi(this IEndpointRouteBuilder app)
     {
         // Anonymous like WorkManagement/Jira's read paths: once data is in the local Postgres mirror,
@@ -194,6 +215,52 @@ public static class ZohoEndpoints
             }
         }).RequireAuthorization(new AuthorizeAttribute { Roles = "Admin,SalesManager" });
 
+        group.MapGet("/fields/{module}", async (string module, IZohoCrmReader reader, CancellationToken ct) =>
+        {
+            var normalizedModule = module.Trim();
+            if (!SupportedZohoFieldModules.Contains(normalizedModule))
+            {
+                return Results.BadRequest(new
+                {
+                    ok = false,
+                    message = "Unknown or unsupported Zoho module.",
+                    module
+                });
+            }
+
+            try
+            {
+                var fields = await reader.ListFieldsAsync(normalizedModule, ct);
+                return Results.Ok(new
+                {
+                    module = normalizedModule,
+                    fields
+                });
+            }
+            catch (ZohoRateLimitException ex)
+            {
+                return ZohoFieldsProblem(
+                    normalizedModule,
+                    "Zoho CRM API is rate limiting requests.",
+                    StatusCodes.Status429TooManyRequests,
+                    ToRetryAfterSeconds(ex.RetryAfter));
+            }
+            catch (ZohoApiException ex)
+            {
+                return ZohoFieldsProblem(
+                    normalizedModule,
+                    "Zoho CRM API returned an error while reading field metadata.",
+                    ex.Status);
+            }
+            catch (InvalidOperationException)
+            {
+                return ZohoFieldsProblem(
+                    normalizedModule,
+                    "Zoho field metadata could not be read because the Zoho connection is not ready.",
+                    StatusCodes.Status503ServiceUnavailable);
+            }
+        }).RequireAuthorization(new AuthorizeAttribute { Roles = "Admin,SalesManager" });
+
         // Latest import job summary — tells clients how stale the local mirror is.
         group.MapGet("/sync-status", async (IZohoImportService imports, CancellationToken ct) =>
         {
@@ -321,4 +388,14 @@ public static class ZohoEndpoints
 
     private static int? ToRetryAfterSeconds(TimeSpan? retryAfter) =>
         retryAfter is null ? null : Math.Max(0, (int)Math.Ceiling(retryAfter.Value.TotalSeconds));
+
+    private static IResult ZohoFieldsProblem(string module, string message, int statusCode, int? retryAfterSeconds = null) =>
+        Results.Json(new
+        {
+            ok = false,
+            module,
+            message,
+            statusCode,
+            retryAfterSeconds
+        }, statusCode: statusCode);
 }
