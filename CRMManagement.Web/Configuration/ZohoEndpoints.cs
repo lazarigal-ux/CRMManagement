@@ -49,7 +49,7 @@ public static class ZohoEndpoints
         // Live health-check still uses the Zoho reader so callers can verify the OAuth connection works.
         // Stays authenticated because it makes a live outbound call (avoid being a Zoho-ping proxy for randoms).
         group.MapGet("/health", async (IZohoCrmReader r, CancellationToken ct) =>
-            Results.Ok(await r.HealthAsync(ct))).RequireAuthorization();
+            Results.Ok(await r.HealthAsync(ct))).RequireAuthorization(new AuthorizeAttribute { Roles = "Admin,SalesManager" });
 
         group.MapGet("/test-connection", async (
             IZohoConnectionService connections,
