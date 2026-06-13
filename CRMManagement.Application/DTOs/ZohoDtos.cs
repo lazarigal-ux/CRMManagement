@@ -594,11 +594,32 @@ public sealed class ZohoFieldsResponse
 
 public sealed class ZohoFieldMetadataDto
 {
-    [JsonPropertyName("api_name")]      public string? ApiName     { get; init; }
-    [JsonPropertyName("field_label")]   public string? FieldLabel  { get; init; }
-    [JsonPropertyName("data_type")]     public string? DataType    { get; init; }
-    [JsonPropertyName("custom_field")]  public bool    CustomField { get; init; }
-    [JsonPropertyName("read_only")]     public bool    ReadOnly    { get; init; }
+    [JsonPropertyName("api_name")]          public string? ApiName         { get; init; }
+    [JsonPropertyName("field_label")]       public string? FieldLabel      { get; init; }
+    [JsonPropertyName("data_type")]         public string? DataType        { get; init; }
+    [JsonPropertyName("custom_field")]      public bool    CustomField     { get; init; }
+    [JsonPropertyName("read_only")]         public bool    ReadOnly        { get; init; }
+    [JsonPropertyName("system_mandatory")]  public bool    SystemMandatory { get; init; }
+    [JsonPropertyName("field_read_only")]   public bool    FieldReadOnly   { get; init; }
+    [JsonPropertyName("length")]            public int?    Length          { get; init; }
+    [JsonPropertyName("pick_list_values")]  public IReadOnlyList<ZohoPickListValueDto> PickListValues { get; init; } = Array.Empty<ZohoPickListValueDto>();
+}
+
+public sealed class ZohoPickListValueDto
+{
+    [JsonPropertyName("display_value")]   public string? DisplayValue  { get; init; }
+    [JsonPropertyName("actual_value")]    public string? ActualValue   { get; init; }
+    [JsonPropertyName("sequence_number")] public int?    SequenceNumber { get; init; }
+    [JsonPropertyName("maps")]            public IReadOnlyList<ZohoPickListMapDto> Maps { get; init; } = Array.Empty<ZohoPickListMapDto>();
+    [JsonPropertyName("colour_code")]     public string? ColourCode    { get; init; }
+    [JsonPropertyName("type")]            public string? Type          { get; init; }
+}
+
+public sealed class ZohoPickListMapDto
+{
+    [JsonPropertyName("api_name")]       public string? ApiName      { get; init; }
+    [JsonPropertyName("display_value")]  public string? DisplayValue { get; init; }
+    [JsonPropertyName("actual_value")]   public string? ActualValue  { get; init; }
 }
 
 public sealed record ZohoHealthDto(bool Configured, string Region, bool TokenAcquired, string? Error);
